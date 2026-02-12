@@ -38,6 +38,14 @@ public class MainFrame extends JFrame {
         actionPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         JButton customerBtn = new JButton("Customer");
         JButton adminBtn = new JButton("Admin");
+
+        customerBtn.addActionListener(e -> openEntryModule());
+        adminBtn.addActionListener(e -> JOptionPane.showMessageDialog(
+                this,
+                "Admin module is not linked yet.",
+                "Info",
+                JOptionPane.INFORMATION_MESSAGE));
+
         actionPanel.add(customerBtn);
         actionPanel.add(adminBtn);
 
@@ -114,5 +122,10 @@ public class MainFrame extends JFrame {
         selectedSpotButton = btn;
 
         btn.setBorder(BorderFactory.createLineBorder(Color.BLUE, 3));
+    }
+
+    private void openEntryModule() {
+        EntryFrame entryFrame = new EntryFrame();
+        entryFrame.setVisible(true);
     }
 }
