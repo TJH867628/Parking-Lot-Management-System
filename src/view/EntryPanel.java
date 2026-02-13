@@ -129,7 +129,8 @@ public class EntryPanel extends JPanel {
         String plate = plateField.getText();
         boolean hasCard = handicappedCardCheck.isSelected();
 
-        EntryResult result = entryController.registerEntry(plate, selectedType.getId(), hasCard, selectedSpot.getSpotId());
+        EntryResult result = entryController.registerEntry(plate, selectedType.getId(), hasCard,
+                selectedSpot.getSpotId());
         if (!result.isSuccess()) {
             JOptionPane.showMessageDialog(this, result.getMessage(), "Entry Failed", JOptionPane.ERROR_MESSAGE);
             return;
@@ -144,21 +145,19 @@ public class EntryPanel extends JPanel {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String plate = rawPlate == null ? "" : rawPlate.trim().toUpperCase();
 
-        String ticketText = """
-                ===== Parking Ticket =====
-                Ticket No  : %s
-                Plate No   : %s
-                Spot       : %s
-                Entry Time : %s
-                Status     : %s
-                ==========================
-                """
-                .formatted(
-                        ticket.getTicketCode(),
-                        plate,
-                        ticket.getSpotCode(),
-                        ticket.getEntryTime().toLocalDateTime().format(formatter),
-                        ticket.getStatus().toUpperCase());
+        String ticketText = String.format(
+                "===== Parking Ticket =====\n" +
+                        "Ticket No  : %s\n" +
+                        "Plate No   : %s\n" +
+                        "Spot       : %s\n" +
+                        "Entry Time : %s\n" +
+                        "Status     : %s\n" +
+                        "==========================",
+                ticket.getTicketCode(),
+                plate,
+                ticket.getSpotCode(),
+                ticket.getEntryTime().toLocalDateTime().format(formatter),
+                ticket.getStatus().toUpperCase());
 
         ticketArea.setText(ticketText);
     }

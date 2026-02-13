@@ -94,7 +94,7 @@ public class MainFrame extends JFrame {
             double rate = spot.getRatePerHour();
             boolean isOccupied = !spot.isAvailable();
             String currentVehicle = spot.getCurrentVehicle();
-            String statusText = isOccupied ?  "Parked\n(" + currentVehicle + ")" : "Available";
+            String statusText = isOccupied ? "Parked\n(" + currentVehicle + ")" : "Available";
 
             JPanel spotPanel = new JPanel(new BorderLayout(5, 5));
             JLabel infoLabel = new JLabel(
@@ -194,18 +194,19 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        JOptionPane.showMessageDialog(this, buildTicketMessage(result.getTicket()), "Parking Ticket", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, buildTicketMessage(result.getTicket()), "Parking Ticket",
+                JOptionPane.INFORMATION_MESSAGE);
         refreshParkingOverview();
     }
 
     private String buildTicketMessage(Ticket ticket) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return """
-                Ticket No : %s
-                Spot      : %s
-                Entry Time: %s
-                Status    : %s
-                """.formatted(
+
+        return String.format(
+                "Ticket No : %s\n" +
+                        "Spot      : %s\n" +
+                        "Entry Time: %s\n" +
+                        "Status    : %s",
                 ticket.getTicketCode(),
                 ticket.getSpotCode(),
                 ticket.getEntryTime().toLocalDateTime().format(formatter),

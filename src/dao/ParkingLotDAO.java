@@ -14,24 +14,21 @@ public class ParkingLotDAO {
     public ParkingLot loadParkingLot() {
         ParkingLot parkingLot = new ParkingLot();
 
-        String sql = """
-                SELECT pf.id AS floor_id,
-                pf.number AS floor_number,
-                ps.id AS spot_id,
-                ps.floor_id,
-                ps.row_number,
-                ps.spot_number,
-                pst.name,
-                ps.status,
-                ps.current_vehicle,
-                pst.hourly_rate
-            FROM parking_floor pf
-            JOIN parking_spot ps ON pf.id = ps.floor_id
-            JOIN parking_spot_type pst ON ps.type_id = pst.id
-            ORDER BY pf.number, ps.row_number, ps.spot_number
-        """;
+        String sql = "SELECT pf.id AS floor_id, " +
+                "pf.number AS floor_number, " +
+                "ps.floor_id, " +
+                "ps.row_number, " +
+                "ps.spot_number, " +
+                "pst.name, " +
+                "ps.status, " +
+                "ps.current_vehicle, " +
+                "pst.hourly_rate " +
+                "FROM parking_floor pf " +
+                "JOIN parking_spot ps ON pf.id = ps.floor_id " +
+                "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
+                "ORDER BY pf.number, ps.row_number, ps.spot_number";
 
-        try(Connection conn = DBConnectionUtil.getConnection()){
+        try (Connection conn = DBConnectionUtil.getConnection()) {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
             Map<Integer, ParkingFloor> floorMap = new HashMap<>();
@@ -49,7 +46,7 @@ public class ParkingLotDAO {
 
                 ParkingFloor floor = floorMap.get(floor_id);
                 if (floor == null) {
-                    floor = new ParkingFloor(floor_id,floor_number);
+                    floor = new ParkingFloor(floor_id, floor_number);
                     floorMap.put(floor_id, floor);
                     parkingLot.addFloor(floor);
                 }
@@ -57,8 +54,8 @@ public class ParkingLotDAO {
                 ParkingSpot spot = new ParkingSpot(spot_id, floor_id, row_number, spot_number, spotType, status, currentVehicle,hourlyRate);
                 floor.addSpot(spot);
             }
-            
-        }catch(SQLException e){
+
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
