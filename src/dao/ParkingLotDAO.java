@@ -16,6 +16,7 @@ public class ParkingLotDAO {
 
         String sql = "SELECT pf.id AS floor_id, " +
                 "pf.number AS floor_number, " +
+                "ps.id AS spot_id, " +
                 "ps.floor_id, " +
                 "ps.row_number, " +
                 "ps.spot_number, " +
@@ -54,7 +55,7 @@ public class ParkingLotDAO {
                 ParkingSpot spot = new ParkingSpot(spot_id, floor_id, row_number, spot_number, spotType, status, currentVehicle,hourlyRate);
                 floor.addSpot(spot);
             }
-
+            
         } catch (SQLException e) {
             e.printStackTrace();
         }
