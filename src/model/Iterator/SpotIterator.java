@@ -1,8 +1,7 @@
 package model.Iterator;
 
-import model.ParkingFloor;
-import model.ParkingSpot;
 import java.util.List;
+import model.ParkingSpot;
 
 public class SpotIterator implements ParkingIterator<ParkingSpot> {
 

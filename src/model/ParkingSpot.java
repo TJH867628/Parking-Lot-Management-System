@@ -1,6 +1,7 @@
 package model;
 
 public class ParkingSpot {
+    private int id;
     private String spotCode;
     private String type;
     private String status;
@@ -10,7 +11,8 @@ public class ParkingSpot {
     private int row_number;
     private int spot_number;
 
-    public ParkingSpot(int floor_id,int row_number ,int spot_number, String type, String status, String currentVehicle,Double hourlyRate) {
+    public ParkingSpot(int id, int floor_id,int row_number ,int spot_number, String type, String status, String currentVehicle,Double hourlyRate) {
+        this.id = id;
         this.type = type;
         this.status = status;
         this.currentVehicle = currentVehicle;
@@ -22,6 +24,10 @@ public class ParkingSpot {
 
     public boolean isAvailable() {
         return status.equals("available") || status.equals("AVAILABLE") || status.equals("Available");
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getType() {

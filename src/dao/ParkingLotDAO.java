@@ -17,6 +17,7 @@ public class ParkingLotDAO {
         String sql = """
                 SELECT pf.id AS floor_id,
                 pf.number AS floor_number,
+                ps.id AS spot_id,
                 ps.floor_id,
                 ps.row_number,
                 ps.spot_number,
@@ -38,6 +39,7 @@ public class ParkingLotDAO {
             while (rs.next()) {
                 int floor_id = rs.getInt("floor_id");
                 int floor_number = rs.getInt("floor_number");
+                int spot_id = rs.getInt("spot_id");
                 int row_number = rs.getInt("row_number");
                 int spot_number = rs.getInt("spot_number");
                 String spotType = rs.getString("name");
@@ -52,7 +54,7 @@ public class ParkingLotDAO {
                     parkingLot.addFloor(floor);
                 }
 
-                ParkingSpot spot = new ParkingSpot(floor_id, row_number, spot_number, spotType, status, currentVehicle,hourlyRate);
+                ParkingSpot spot = new ParkingSpot(spot_id, floor_id, row_number, spot_number, spotType, status, currentVehicle,hourlyRate);
                 floor.addSpot(spot);
             }
             

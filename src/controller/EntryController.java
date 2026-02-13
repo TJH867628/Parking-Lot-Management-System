@@ -59,7 +59,8 @@ public class EntryController {
 
             if (!ticketDAO.isSpotCompatible(conn, selectedSpotId, vehicleTypeId)) {
                 conn.rollback();
-                return EntryResult.failure("Selected spot is not compatible with this vehicle type.");
+                String vehicleTypeName = getVehicleTypeName(vehicleTypeId);
+                return EntryResult.failure("Cannot park " + vehicleTypeName + " in " + selectedSpot.getSpotType() + " spot.");
             }
 
             // Re-check and lock by update so two users cannot occupy the same spot at the same time.
@@ -107,6 +108,16 @@ public class EntryController {
     private String generateTicketCode(String licensePlate, LocalDateTime entryTime) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         return "T-" + licensePlate + "-" + entryTime.format(formatter);
+    }
+
+    private String getVehicleTypeName(int vehicleTypeId) {
+        List<VehicleType> vehicleTypes = vehicleDAO.getAllVehicleTypes();
+        for (VehicleType vehicleType : vehicleTypes) {
+            if (vehicleType.getId() == vehicleTypeId) {
+                return vehicleType.getName();
+            }
+        }
+        return "selected vehicle";
     }
 
     private void rollbackQuietly(Connection conn) {
