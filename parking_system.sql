@@ -20,6 +20,18 @@ SET time_zone = "+00:00";
 --
 -- Database: `parking_system`
 --
+CREATE DATABASE IF NOT EXISTS `parking_system` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `parking_system`;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `ticket`;
+DROP TABLE IF EXISTS `vehicle`;
+DROP TABLE IF EXISTS `parking_spot`;
+DROP TABLE IF EXISTS `parking_floor`;
+DROP TABLE IF EXISTS `parking_spot_type`;
+DROP TABLE IF EXISTS `vehicle_spot_rule`;
+DROP TABLE IF EXISTS `vehicle_type`;
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- --------------------------------------------------------
 
@@ -244,6 +256,55 @@ INSERT INTO `vehicle_type` (`id`, `name`, `created_at`, `updated_at`) VALUES
 (4, 'Truck', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 (5, 'Handicapped', '2026-01-29 17:50:13', '2026-01-29 17:50:13');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vehicle`
+--
+
+CREATE TABLE `vehicle` (
+  `id` int NOT NULL,
+  `license_plate` varchar(20) NOT NULL,
+  `vehicle_type_id` int NOT NULL,
+  `has_handicapped_card` tinyint(1) NOT NULL DEFAULT '0',
+  `entry_time` datetime NOT NULL,
+  `exit_time` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `vehicle`
+--
+
+INSERT INTO `vehicle` (`id`, `license_plate`, `vehicle_type_id`, `has_handicapped_card`, `entry_time`, `exit_time`, `created_at`, `updated_at`) VALUES
+(1, 'JNX6383', 2, 0, '2026-01-29 18:38:37', NULL, '2026-01-29 18:38:37', '2026-01-29 18:38:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ticket`
+--
+
+CREATE TABLE `ticket` (
+  `id` int NOT NULL,
+  `ticket_code` varchar(50) NOT NULL,
+  `vehicle_id` int NOT NULL,
+  `spot_id` int NOT NULL,
+  `entry_time` datetime NOT NULL,
+  `exit_time` datetime DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ticket`
+--
+
+INSERT INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time`, `exit_time`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'T-JNX6383-20260129183837', 1, 51, '2026-01-29 18:38:37', NULL, 'active', '2026-01-29 18:38:37', '2026-01-29 18:38:37');
+
 --
 -- Indexes for dumped tables
 --
@@ -281,6 +342,23 @@ ALTER TABLE `vehicle_type`
   ADD UNIQUE KEY `name` (`name`);
 
 --
+-- Indexes for table `vehicle`
+--
+ALTER TABLE `vehicle`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `vehicle_type_id` (`vehicle_type_id`),
+  ADD KEY `license_plate` (`license_plate`);
+
+--
+-- Indexes for table `ticket`
+--
+ALTER TABLE `ticket`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `ticket_code` (`ticket_code`),
+  ADD KEY `vehicle_id` (`vehicle_id`),
+  ADD KEY `spot_id` (`spot_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -315,6 +393,18 @@ ALTER TABLE `vehicle_type`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `vehicle`
+--
+ALTER TABLE `vehicle`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `ticket`
+--
+ALTER TABLE `ticket`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- Constraints for dumped tables
 --
 
@@ -323,9 +413,21 @@ ALTER TABLE `vehicle_type`
 --
 ALTER TABLE `parking_spot`
   ADD CONSTRAINT `floor_id` FOREIGN KEY (`floor_id`) REFERENCES `parking_floor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Constraints for table `vehicle`
+--
+ALTER TABLE `vehicle`
+  ADD CONSTRAINT `vehicle_vehicle_type_fk` FOREIGN KEY (`vehicle_type_id`) REFERENCES `vehicle_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Constraints for table `ticket`
+--
+ALTER TABLE `ticket`
+  ADD CONSTRAINT `ticket_vehicle_fk` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `ticket_spot_fk` FOREIGN KEY (`spot_id`) REFERENCES `parking_spot` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
