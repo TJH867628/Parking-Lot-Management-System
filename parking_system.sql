@@ -212,38 +212,6 @@ REPLACE INTO `parking_spot_type` (`id`, `name`, `hourly_rate`, `created_at`, `up
 	(3, 'handicapped', 2, '2026-01-29 09:13:47', '2026-01-29 09:13:47'),
 	(4, 'reserved', 10, '2026-01-29 09:13:47', '2026-01-29 09:13:47');
 
--- Dumping structure for table parking_system.payment
-DROP TABLE IF EXISTS `payment`;
-CREATE TABLE IF NOT EXISTS `payment` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `ticket_id` int NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payment_time` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `ticket_id` (`ticket_id`),
-  CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `ticket` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Dumping data for table parking_system.payment: ~16 rows (approximately)
-REPLACE INTO `payment` (`id`, `ticket_id`, `amount`, `method`, `payment_time`) VALUES
-	(10, 9, 0.00, 'Cash', '2026-02-16 02:03:14'),
-	(11, 10, 0.00, 'Cash', '2026-02-16 02:10:00'),
-	(12, 11, 0.00, 'Cash', '2026-02-16 02:18:19'),
-	(13, 12, 0.00, 'Cash', '2026-02-16 02:20:45'),
-	(14, 13, 5.00, 'Cash', '2026-02-16 02:28:28'),
-	(15, 15, 0.00, 'Cash', '2026-02-16 02:30:17'),
-	(16, 15, 0.00, 'Cash', '2026-02-16 02:31:21'),
-	(17, 15, 0.00, 'Cash', '2026-02-16 02:35:27'),
-	(18, 15, 0.00, 'Cash', '2026-02-16 02:36:23'),
-	(19, 15, 0.00, 'Cash', '2026-02-16 02:37:27'),
-	(20, 16, 4.00, 'Cash', '2026-02-16 02:37:35'),
-	(21, 19, 0.00, 'Cash', '2026-02-16 03:47:15'),
-	(22, 18, 0.00, 'Cash', '2026-02-16 03:47:23'),
-	(23, 14, 4.00, 'Cash', '2026-02-16 03:47:29'),
-	(24, 21, 5.00, 'Cash', '2026-02-16 06:10:26'),
-	(25, 24, 2.00, 'Cash', '2026-02-16 06:14:53');
-
 -- Dumping structure for table parking_system.ticket
 DROP TABLE IF EXISTS `ticket`;
 CREATE TABLE IF NOT EXISTS `ticket` (
@@ -282,6 +250,38 @@ REPLACE INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time
 	(22, 'T-ASD-20260216060434', 22, 62, '2026-02-16 06:04:34', NULL, 'active', '2026-02-15 22:04:34', '2026-02-15 22:04:34'),
 	(23, 'T-VCBCVB-20260216060502', 23, 64, '2026-02-16 06:05:02', NULL, 'active', '2026-02-15 22:05:02', '2026-02-15 22:05:02'),
 	(24, 'T-A-20260216061008', 24, 54, '2026-02-16 06:10:08', '2026-02-16 06:14:53', 'paid', '2026-02-15 22:10:08', '2026-02-15 22:14:53');
+
+-- Dumping structure for table parking_system.payment
+DROP TABLE IF EXISTS `payment`;
+CREATE TABLE IF NOT EXISTS `payment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `ticket_id` int NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `ticket_id` (`ticket_id`),
+  CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `ticket` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table parking_system.payment: ~16 rows (approximately)
+REPLACE INTO `payment` (`id`, `ticket_id`, `amount`, `method`, `payment_time`) VALUES
+	(10, 9, 0.00, 'Cash', '2026-02-16 02:03:14'),
+	(11, 10, 0.00, 'Cash', '2026-02-16 02:10:00'),
+	(12, 11, 0.00, 'Cash', '2026-02-16 02:18:19'),
+	(13, 12, 0.00, 'Cash', '2026-02-16 02:20:45'),
+	(14, 13, 5.00, 'Cash', '2026-02-16 02:28:28'),
+	(15, 15, 0.00, 'Cash', '2026-02-16 02:30:17'),
+	(16, 15, 0.00, 'Cash', '2026-02-16 02:31:21'),
+	(17, 15, 0.00, 'Cash', '2026-02-16 02:35:27'),
+	(18, 15, 0.00, 'Cash', '2026-02-16 02:36:23'),
+	(19, 15, 0.00, 'Cash', '2026-02-16 02:37:27'),
+	(20, 16, 4.00, 'Cash', '2026-02-16 02:37:35'),
+	(21, 19, 0.00, 'Cash', '2026-02-16 03:47:15'),
+	(22, 18, 0.00, 'Cash', '2026-02-16 03:47:23'),
+	(23, 14, 4.00, 'Cash', '2026-02-16 03:47:29'),
+	(24, 21, 5.00, 'Cash', '2026-02-16 06:10:26'),
+	(25, 24, 2.00, 'Cash', '2026-02-16 06:14:53');
 
 -- Dumping structure for table parking_system.vehicle
 DROP TABLE IF EXISTS `vehicle`;
