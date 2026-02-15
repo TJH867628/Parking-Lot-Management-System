@@ -4,6 +4,7 @@ import javax.swing.*;
 
 import controller.EntryController;
 import controller.ParkingController;
+import controller.ExitController;
 import model.EntryResult;
 import model.ParkingFloor;
 import model.Iterator.FloorIterator;
@@ -23,6 +24,7 @@ public class MainFrame extends JFrame {
     private JLabel selectedSpotLabel;
     private ParkingController parkingController = new ParkingController();
     private EntryController entryController = new EntryController();
+    private ExitController exitController = new ExitController();
 
     public MainFrame() {
         setTitle("Parking Lot Management System");
@@ -50,9 +52,11 @@ public class MainFrame extends JFrame {
         JPanel actionPanel = new JPanel();
         actionPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         JButton parkVehicleBtn = new JButton("Park Vehicle");
+        JButton exitVehicleBtn = new JButton("Exit Vehicle");
         JButton adminBtn = new JButton("Admin");
 
         parkVehicleBtn.addActionListener(e -> parkSelectedSpot());
+        exitVehicleBtn.addActionListener(e -> handleExitVehicle());
         adminBtn.addActionListener(e -> JOptionPane.showMessageDialog(
                 this,
                 "Admin module is not linked yet.",
@@ -60,6 +64,7 @@ public class MainFrame extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE));
 
         actionPanel.add(parkVehicleBtn);
+        actionPanel.add(exitVehicleBtn);
         actionPanel.add(adminBtn);
 
         topBar.add(titleLabel, BorderLayout.WEST);
@@ -94,7 +99,7 @@ public class MainFrame extends JFrame {
             double rate = spot.getRatePerHour();
             boolean isOccupied = !spot.isAvailable();
             String currentVehicle = spot.getCurrentVehicle();
-            String statusText = isOccupied ?  "Parked\n(" + currentVehicle + ")" : "Available";
+            String statusText = isOccupied ? "Parked\n(" + currentVehicle + ")" : "Available";
 
             JPanel spotPanel = new JPanel(new BorderLayout(5, 5));
             JLabel infoLabel = new JLabel(
@@ -194,18 +199,91 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        JOptionPane.showMessageDialog(this, buildTicketMessage(result.getTicket()), "Parking Ticket", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, buildTicketMessage(result.getTicket()), "Parking Ticket",
+                JOptionPane.INFORMATION_MESSAGE);
         refreshParkingOverview();
+    }
+
+    private void handleExitVehicle() {
+        JTextField plateField = new JTextField();
+
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("Enter License Plate:"));
+        panel.add(plateField);
+
+        int option = JOptionPane.showConfirmDialog(
+                this,
+                panel,
+                "Vehicle Exit",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (option != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String plate = plateField.getText().trim();
+
+        if (plate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a license plate.");
+            return;
+        }
+
+        String summary = exitController.calculateExit(plate);
+
+        if (summary.contains("No active parking")) {
+            JOptionPane.showMessageDialog(this, summary);
+            return;
+        }
+
+        String[] options = { "Cash", "Card" };
+        String method = (String) JOptionPane.showInputDialog(
+                this,
+                summary + "\n\nSelect Payment Method:",
+                "Payment",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (method == null)
+            return;
+
+        double finePaid = exitController.processPayment(plate, method);
+        boolean success = finePaid >= 0;
+
+        if (success) {
+
+            String receipt = exitController.buildReceipt(plate, method, finePaid);
+
+            JTextArea textArea = new JTextArea(receipt);
+            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+            textArea.setEditable(false);
+            textArea.setCaretPosition(0);
+
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new Dimension(400, 300));
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    scrollPane,
+                    "Payment Receipt",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            refreshParkingOverview();
+        } else {
+            JOptionPane.showMessageDialog(this, "Payment failed!");
+        }
     }
 
     private String buildTicketMessage(Ticket ticket) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return """
-                Ticket No : %s
-                Spot      : %s
-                Entry Time: %s
-                Status    : %s
-                """.formatted(
+
+        return String.format(
+                "Ticket No : %s\n" +
+                        "Spot      : %s\n" +
+                        "Entry Time: %s\n" +
+                        "Status    : %s",
                 ticket.getTicketCode(),
                 ticket.getSpotCode(),
                 ticket.getEntryTime().toLocalDateTime().format(formatter),
