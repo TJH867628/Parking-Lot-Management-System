@@ -212,44 +212,6 @@ REPLACE INTO `parking_spot_type` (`id`, `name`, `hourly_rate`, `created_at`, `up
 	(3, 'handicapped', 2, '2026-01-29 09:13:47', '2026-01-29 09:13:47'),
 	(4, 'reserved', 10, '2026-01-29 09:13:47', '2026-01-29 09:13:47');
 
--- Dumping structure for table parking_system.ticket
-DROP TABLE IF EXISTS `ticket`;
-CREATE TABLE IF NOT EXISTS `ticket` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `ticket_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `vehicle_id` int NOT NULL,
-  `spot_id` int NOT NULL,
-  `entry_time` datetime NOT NULL,
-  `exit_time` datetime DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ticket_code` (`ticket_code`),
-  KEY `vehicle_id` (`vehicle_id`),
-  KEY `spot_id` (`spot_id`),
-  CONSTRAINT `ticket_spot_fk` FOREIGN KEY (`spot_id`) REFERENCES `parking_spot` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `ticket_vehicle_fk` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Dumping data for table parking_system.ticket: ~16 rows (approximately)
-REPLACE INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time`, `exit_time`, `status`, `created_at`, `updated_at`) VALUES
-	(9, 'T-SAD-20260216020300', 9, 60, '2026-02-16 02:03:00', '2026-02-16 02:03:14', 'paid', '2026-02-15 18:03:00', '2026-02-15 20:48:56'),
-	(10, 'T-123-20260216020953', 10, 132, '2026-02-16 02:09:53', '2026-02-16 02:10:00', 'paid', '2026-02-15 18:09:53', '2026-02-15 20:49:01'),
-	(11, 'T-123-20260216021806', 11, 53, '2026-02-16 02:18:07', '2026-02-16 02:18:19', 'paid', '2026-02-15 18:18:06', '2026-02-15 20:49:01'),
-	(12, 'T-123-20260216022040', 12, 53, '2026-02-16 02:20:41', '2026-02-16 02:20:45', 'paid', '2026-02-15 18:20:40', '2026-02-15 20:49:00'),
-	(13, 'T-123-20260216022058', 13, 59, '2026-02-16 01:30:59', '2026-02-16 02:28:28', 'paid', '2026-02-15 18:20:58', '2026-02-15 20:49:00'),
-	(14, 'T-123-20260216022933', 14, 55, '2026-02-16 02:29:34', '2026-02-16 03:47:29', 'paid', '2026-02-15 18:29:33', '2026-02-15 20:48:59'),
-	(15, 'T-456-20260216022945', 15, 69, '2026-02-16 01:29:45', '2026-02-16 02:37:27', 'paid', '2026-02-15 18:29:45', '2026-02-15 20:48:59'),
-	(16, 'T-789-20260216022954', 16, 59, '2026-02-16 01:29:55', '2026-02-16 02:37:35', 'paid', '2026-02-15 18:29:54', '2026-02-15 20:48:59'),
-	(17, 'T-1233-20260216034647', 17, 52, '2026-02-15 03:46:48', NULL, 'active', '2026-02-15 19:46:47', '2026-02-15 20:42:22'),
-	(18, 'T-TRUCK-20260216034659', 18, 65, '2026-02-16 03:46:59', '2026-02-16 03:47:23', 'paid', '2026-02-15 19:46:59', '2026-02-15 20:49:02'),
-	(19, 'T-H-20260216034709', 19, 69, '2026-02-16 03:47:10', '2026-02-16 03:47:15', 'paid', '2026-02-15 19:47:09', '2026-02-15 20:49:02'),
-	(20, 'T-4566-20260216060413', 20, 55, '2026-02-16 06:04:14', NULL, 'active', '2026-02-15 22:04:13', '2026-02-15 22:04:13'),
-	(21, 'T-123-20260216060423', 21, 58, '2026-02-16 06:04:23', '2026-02-16 06:10:26', 'paid', '2026-02-15 22:04:23', '2026-02-15 22:10:26'),
-	(22, 'T-ASD-20260216060434', 22, 62, '2026-02-16 06:04:34', NULL, 'active', '2026-02-15 22:04:34', '2026-02-15 22:04:34'),
-	(23, 'T-VCBCVB-20260216060502', 23, 64, '2026-02-16 06:05:02', NULL, 'active', '2026-02-15 22:05:02', '2026-02-15 22:05:02'),
-	(24, 'T-A-20260216061008', 24, 54, '2026-02-16 06:10:08', '2026-02-16 06:14:53', 'paid', '2026-02-15 22:10:08', '2026-02-15 22:14:53');
 
 -- Dumping structure for table parking_system.payment
 DROP TABLE IF EXISTS `payment`;
@@ -358,6 +320,45 @@ REPLACE INTO `vehicle_type` (`id`, `name`, `created_at`, `updated_at`) VALUES
 	(3, 'SUV', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 	(4, 'Truck', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 	(5, 'Handicapped', '2026-01-29 17:50:13', '2026-01-29 17:50:13');
+
+-- Dumping structure for table parking_system.ticket
+DROP TABLE IF EXISTS `ticket`;
+CREATE TABLE IF NOT EXISTS `ticket` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `ticket_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `vehicle_id` int NOT NULL,
+  `spot_id` int NOT NULL,
+  `entry_time` datetime NOT NULL,
+  `exit_time` datetime DEFAULT NULL,
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ticket_code` (`ticket_code`),
+  KEY `vehicle_id` (`vehicle_id`),
+  KEY `spot_id` (`spot_id`),
+  CONSTRAINT `ticket_spot_fk` FOREIGN KEY (`spot_id`) REFERENCES `parking_spot` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `ticket_vehicle_fk` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Dumping data for table parking_system.ticket: ~16 rows (approximately)
+REPLACE INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time`, `exit_time`, `status`, `created_at`, `updated_at`) VALUES
+	(9, 'T-SAD-20260216020300', 9, 60, '2026-02-16 02:03:00', '2026-02-16 02:03:14', 'paid', '2026-02-15 18:03:00', '2026-02-15 20:48:56'),
+	(10, 'T-123-20260216020953', 10, 132, '2026-02-16 02:09:53', '2026-02-16 02:10:00', 'paid', '2026-02-15 18:09:53', '2026-02-15 20:49:01'),
+	(11, 'T-123-20260216021806', 11, 53, '2026-02-16 02:18:07', '2026-02-16 02:18:19', 'paid', '2026-02-15 18:18:06', '2026-02-15 20:49:01'),
+	(12, 'T-123-20260216022040', 12, 53, '2026-02-16 02:20:41', '2026-02-16 02:20:45', 'paid', '2026-02-15 18:20:40', '2026-02-15 20:49:00'),
+	(13, 'T-123-20260216022058', 13, 59, '2026-02-16 01:30:59', '2026-02-16 02:28:28', 'paid', '2026-02-15 18:20:58', '2026-02-15 20:49:00'),
+	(14, 'T-123-20260216022933', 14, 55, '2026-02-16 02:29:34', '2026-02-16 03:47:29', 'paid', '2026-02-15 18:29:33', '2026-02-15 20:48:59'),
+	(15, 'T-456-20260216022945', 15, 69, '2026-02-16 01:29:45', '2026-02-16 02:37:27', 'paid', '2026-02-15 18:29:45', '2026-02-15 20:48:59'),
+	(16, 'T-789-20260216022954', 16, 59, '2026-02-16 01:29:55', '2026-02-16 02:37:35', 'paid', '2026-02-15 18:29:54', '2026-02-15 20:48:59'),
+	(17, 'T-1233-20260216034647', 17, 52, '2026-02-15 03:46:48', NULL, 'active', '2026-02-15 19:46:47', '2026-02-15 20:42:22'),
+	(18, 'T-TRUCK-20260216034659', 18, 65, '2026-02-16 03:46:59', '2026-02-16 03:47:23', 'paid', '2026-02-15 19:46:59', '2026-02-15 20:49:02'),
+	(19, 'T-H-20260216034709', 19, 69, '2026-02-16 03:47:10', '2026-02-16 03:47:15', 'paid', '2026-02-15 19:47:09', '2026-02-15 20:49:02'),
+	(20, 'T-4566-20260216060413', 20, 55, '2026-02-16 06:04:14', NULL, 'active', '2026-02-15 22:04:13', '2026-02-15 22:04:13'),
+	(21, 'T-123-20260216060423', 21, 58, '2026-02-16 06:04:23', '2026-02-16 06:10:26', 'paid', '2026-02-15 22:04:23', '2026-02-15 22:10:26'),
+	(22, 'T-ASD-20260216060434', 22, 62, '2026-02-16 06:04:34', NULL, 'active', '2026-02-15 22:04:34', '2026-02-15 22:04:34'),
+	(23, 'T-VCBCVB-20260216060502', 23, 64, '2026-02-16 06:05:02', NULL, 'active', '2026-02-15 22:05:02', '2026-02-15 22:05:02'),
+	(24, 'T-A-20260216061008', 24, 54, '2026-02-16 06:10:08', '2026-02-16 06:14:53', 'paid', '2026-02-15 22:10:08', '2026-02-15 22:14:53');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
