@@ -14,15 +14,57 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+
+-- Dumping database structure for parking_system
+DROP DATABASE IF EXISTS `parking_system`;
+CREATE DATABASE IF NOT EXISTS `parking_system` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `parking_system`;
+
+-- Dumping structure for table parking_system.fine
+DROP TABLE IF EXISTS `fine`;
+CREATE TABLE IF NOT EXISTS `fine` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `license_plate` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'unpaid',
+  `reason` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Dumping data for table parking_system.fine: ~1 rows (approximately)
 REPLACE INTO `fine` (`id`, `license_plate`, `amount`, `status`, `reason`, `created_at`) VALUES
 	(5, '1233', 60.00, 'unpaid', 'Overstayed parking duration', '2026-02-16 04:46:45');
+
+-- Dumping structure for table parking_system.fine_scheme
+DROP TABLE IF EXISTS `fine_scheme`;
+CREATE TABLE IF NOT EXISTS `fine_scheme` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `scheme_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '0',
+  `base_amount` double DEFAULT '0',
+  `additional_24_48` double DEFAULT '0',
+  `additional_48_72` double DEFAULT '0',
+  `above_72` double DEFAULT '0',
+  `hourly_rate` double DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Dumping data for table parking_system.fine_scheme: ~3 rows (approximately)
 REPLACE INTO `fine_scheme` (`id`, `scheme_type`, `base_amount`, `additional_24_48`, `additional_48_72`, `above_72`, `hourly_rate`, `is_active`) VALUES
 	(1, 'Flat Rate', 50, 0, 0, 0, 0, 0),
 	(2, 'Per Hour', 50, 100, 150, 200, 0, 0),
 	(3, 'Progressive', 0, 0, 0, 0, 20, 1);
+
+-- Dumping structure for table parking_system.parking_floor
+DROP TABLE IF EXISTS `parking_floor`;
+CREATE TABLE IF NOT EXISTS `parking_floor` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `number` int NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table parking_system.parking_floor: ~5 rows (approximately)
 REPLACE INTO `parking_floor` (`id`, `number`, `created_at`, `updated_at`) VALUES
@@ -31,6 +73,23 @@ REPLACE INTO `parking_floor` (`id`, `number`, `created_at`, `updated_at`) VALUES
 	(3, 3, '2026-01-29 09:22:23', '2026-01-29 09:22:23'),
 	(4, 4, '2026-01-29 09:22:23', '2026-01-29 09:22:23'),
 	(5, 5, '2026-01-29 09:22:23', '2026-01-29 09:22:23');
+
+-- Dumping structure for table parking_system.parking_spot
+DROP TABLE IF EXISTS `parking_spot`;
+CREATE TABLE IF NOT EXISTS `parking_spot` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `row_number` int DEFAULT NULL,
+  `floor_id` int DEFAULT NULL,
+  `spot_number` int DEFAULT NULL,
+  `type_id` int DEFAULT NULL,
+  `status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `current_vehicle` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `floor_id` (`floor_id`),
+  CONSTRAINT `floor_id` FOREIGN KEY (`floor_id`) REFERENCES `parking_floor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=151 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table parking_system.parking_spot: ~100 rows (approximately)
 REPLACE INTO `parking_spot` (`id`, `row_number`, `floor_id`, `spot_number`, `type_id`, `status`, `current_vehicle`, `created_at`, `updated_at`) VALUES
@@ -135,6 +194,17 @@ REPLACE INTO `parking_spot` (`id`, `row_number`, `floor_id`, `spot_number`, `typ
 	(149, 4, 5, 4, 3, 'available', NULL, '2026-01-29 10:38:37', '2026-01-29 10:38:37'),
 	(150, 4, 5, 5, 3, 'available', NULL, '2026-01-29 10:38:37', '2026-01-29 10:38:37');
 
+-- Dumping structure for table parking_system.parking_spot_type
+DROP TABLE IF EXISTS `parking_spot_type`;
+CREATE TABLE IF NOT EXISTS `parking_spot_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `hourly_rate` double NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Dumping data for table parking_system.parking_spot_type: ~4 rows (approximately)
 REPLACE INTO `parking_spot_type` (`id`, `name`, `hourly_rate`, `created_at`, `updated_at`) VALUES
 	(1, 'compact', 2, '2026-01-29 09:13:47', '2026-01-29 09:13:47'),
@@ -142,7 +212,20 @@ REPLACE INTO `parking_spot_type` (`id`, `name`, `hourly_rate`, `created_at`, `up
 	(3, 'handicapped', 2, '2026-01-29 09:13:47', '2026-01-29 09:13:47'),
 	(4, 'reserved', 10, '2026-01-29 09:13:47', '2026-01-29 09:13:47');
 
--- Dumping data for table parking_system.payment: ~0 rows (approximately)
+-- Dumping structure for table parking_system.payment
+DROP TABLE IF EXISTS `payment`;
+CREATE TABLE IF NOT EXISTS `payment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `ticket_id` int NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `ticket_id` (`ticket_id`),
+  CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `ticket` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table parking_system.payment: ~16 rows (approximately)
 REPLACE INTO `payment` (`id`, `ticket_id`, `amount`, `method`, `payment_time`) VALUES
 	(10, 9, 0.00, 'Cash', '2026-02-16 02:03:14'),
 	(11, 10, 0.00, 'Cash', '2026-02-16 02:10:00'),
@@ -161,7 +244,27 @@ REPLACE INTO `payment` (`id`, `ticket_id`, `amount`, `method`, `payment_time`) V
 	(24, 21, 5.00, 'Cash', '2026-02-16 06:10:26'),
 	(25, 24, 2.00, 'Cash', '2026-02-16 06:14:53');
 
--- Dumping data for table parking_system.ticket: ~0 rows (approximately)
+-- Dumping structure for table parking_system.ticket
+DROP TABLE IF EXISTS `ticket`;
+CREATE TABLE IF NOT EXISTS `ticket` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `ticket_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `vehicle_id` int NOT NULL,
+  `spot_id` int NOT NULL,
+  `entry_time` datetime NOT NULL,
+  `exit_time` datetime DEFAULT NULL,
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ticket_code` (`ticket_code`),
+  KEY `vehicle_id` (`vehicle_id`),
+  KEY `spot_id` (`spot_id`),
+  CONSTRAINT `ticket_spot_fk` FOREIGN KEY (`spot_id`) REFERENCES `parking_spot` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `ticket_vehicle_fk` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Dumping data for table parking_system.ticket: ~16 rows (approximately)
 REPLACE INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time`, `exit_time`, `status`, `created_at`, `updated_at`) VALUES
 	(9, 'T-SAD-20260216020300', 9, 60, '2026-02-16 02:03:00', '2026-02-16 02:03:14', 'paid', '2026-02-15 18:03:00', '2026-02-15 20:48:56'),
 	(10, 'T-123-20260216020953', 10, 132, '2026-02-16 02:09:53', '2026-02-16 02:10:00', 'paid', '2026-02-15 18:09:53', '2026-02-15 20:49:01'),
@@ -180,7 +283,24 @@ REPLACE INTO `ticket` (`id`, `ticket_code`, `vehicle_id`, `spot_id`, `entry_time
 	(23, 'T-VCBCVB-20260216060502', 23, 64, '2026-02-16 06:05:02', NULL, 'active', '2026-02-15 22:05:02', '2026-02-15 22:05:02'),
 	(24, 'T-A-20260216061008', 24, 54, '2026-02-16 06:10:08', '2026-02-16 06:14:53', 'paid', '2026-02-15 22:10:08', '2026-02-15 22:14:53');
 
--- Dumping data for table parking_system.vehicle: ~0 rows (approximately)
+-- Dumping structure for table parking_system.vehicle
+DROP TABLE IF EXISTS `vehicle`;
+CREATE TABLE IF NOT EXISTS `vehicle` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `license_plate` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `vehicle_type_id` int NOT NULL,
+  `has_handicapped_card` tinyint(1) NOT NULL DEFAULT '0',
+  `entry_time` datetime NOT NULL,
+  `exit_time` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `vehicle_type_id` (`vehicle_type_id`),
+  KEY `license_plate` (`license_plate`),
+  CONSTRAINT `vehicle_vehicle_type_fk` FOREIGN KEY (`vehicle_type_id`) REFERENCES `vehicle_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Dumping data for table parking_system.vehicle: ~16 rows (approximately)
 REPLACE INTO `vehicle` (`id`, `license_plate`, `vehicle_type_id`, `has_handicapped_card`, `entry_time`, `exit_time`, `created_at`, `updated_at`) VALUES
 	(9, 'SAD', 3, 0, '2026-02-16 02:03:00', NULL, '2026-02-15 18:03:00', '2026-02-15 18:03:00'),
 	(10, '123', 1, 0, '2026-02-16 02:09:53', '2026-02-16 06:10:26', '2026-02-15 18:09:53', '2026-02-15 22:10:26'),
@@ -199,6 +319,15 @@ REPLACE INTO `vehicle` (`id`, `license_plate`, `vehicle_type_id`, `has_handicapp
 	(23, 'VCBCVB', 5, 0, '2026-02-16 06:05:02', NULL, '2026-02-15 22:05:02', '2026-02-15 22:05:02'),
 	(24, 'A', 1, 0, '2026-02-16 06:10:08', '2026-02-16 06:14:53', '2026-02-15 22:10:08', '2026-02-15 22:14:53');
 
+-- Dumping structure for table parking_system.vehicle_spot_rule
+DROP TABLE IF EXISTS `vehicle_spot_rule`;
+CREATE TABLE IF NOT EXISTS `vehicle_spot_rule` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `vehicle_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `spot_type` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Dumping data for table parking_system.vehicle_spot_rule: ~9 rows (approximately)
 REPLACE INTO `vehicle_spot_rule` (`id`, `vehicle_type`, `spot_type`) VALUES
 	(1, '1', 1),
@@ -210,6 +339,17 @@ REPLACE INTO `vehicle_spot_rule` (`id`, `vehicle_type`, `spot_type`) VALUES
 	(7, '5', 2),
 	(8, '5', 3),
 	(9, '5', 4);
+
+-- Dumping structure for table parking_system.vehicle_type
+DROP TABLE IF EXISTS `vehicle_type`;
+CREATE TABLE IF NOT EXISTS `vehicle_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table parking_system.vehicle_type: ~5 rows (approximately)
 REPLACE INTO `vehicle_type` (`id`, `name`, `created_at`, `updated_at`) VALUES
