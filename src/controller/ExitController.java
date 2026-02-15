@@ -32,7 +32,8 @@ public class ExitController {
 
             ResultSet rs = pstmt.executeQuery();
 
-            if (!rs.next()) return "No active parking found.";
+            if (!rs.next())
+                return "No active parking found.";
 
             int spotId = rs.getInt("spot_id");
             Timestamp entryTime = rs.getTimestamp("entry_time");
@@ -46,11 +47,15 @@ public class ExitController {
             boolean isHandicapped = checkIfHandicappedVehicle(conn, plate);
             boolean isHandicappedSpot = checkIfHandicappedSpot(conn, spotId);
 
-            double parkingFee = (isHandicapped && isHandicappedSpot)
-                    ? hours * 2.0
-                    : hours * rate;
+            double parkingFee = 0;
+            if (isHandicapped && isHandicappedSpot) {
+                parkingFee = 0;
+            } else if (isHandicapped && !isHandicappedSpot) {
+                parkingFee = hours * 2.0;
+            } else {
+                parkingFee = hours * rate;
+            }
 
-            // ✅ FIX: use helper to sum unpaid fines
             double unpaid = getUnpaidFineAmount(conn, plate);
             double total = parkingFee + unpaid;
 
@@ -67,45 +72,43 @@ public class ExitController {
     }
 
     public double processPayment(String plate, String method) {
-    try (Connection conn = DBConnectionUtil.getConnection()) {
-        conn.setAutoCommit(false);
+        try (Connection conn = DBConnectionUtil.getConnection()) {
+            conn.setAutoCommit(false);
 
-        double parkingFee = calculateParkingFee(conn, plate);
-        double fineAmount = calculateFine(conn, plate);
-        String reason = (fineAmount > 0) ? "Overdue parking" : null;
+            double parkingFee = calculateParkingFee(conn, plate);
+            double fineAmount = calculateFine(conn, plate);
+            String reason = (fineAmount > 0) ? "Overdue parking" : null;
 
-        if (fineAmount > 0 && reason != null) {
-            if (!fineDAO.hasUnpaidFine(conn, plate)) {
-                fineDAO.insertFine(conn, plate, fineAmount, reason);
+            if (fineAmount > 0 && reason != null) {
+                if (!fineDAO.hasUnpaidFine(conn, plate)) {
+                    fineDAO.insertFine(conn, plate, fineAmount, reason);
+                }
             }
+
+            double total = parkingFee + fineAmount;
+
+            int ticketId = getTicketId(conn, plate);
+            paymentDAO.insertPayment(conn, ticketId, total, method);
+
+            updateTicketExit(conn, ticketId);
+            updateSpotAvailability(conn, ticketId);
+            updateVehicleExit(conn, plate);
+
+            fineDAO.markFinesPaid(conn, plate);
+
+            conn.commit();
+
+            return fineAmount;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
-
-        double total = parkingFee + fineAmount;
-
-        int ticketId = getTicketId(conn, plate);
-        paymentDAO.insertPayment(conn, ticketId, total, method);
-
-        updateTicketExit(conn, ticketId);
-        updateSpotAvailability(conn, plate);
-        updateVehicleExit(conn, plate);
-
-        // ✅ Mark fines as paid once payment is successful
-        fineDAO.markFinesPaid(conn, plate);
-
-        conn.commit();
-
-        return fineAmount;
-    } catch (Exception e) {
-        e.printStackTrace();
-        return -1;
     }
-}
-
 
     public String buildReceipt(String plate, String method, double finePaid) {
         try (Connection conn = DBConnectionUtil.getConnection()) {
 
-            String sql = "SELECT t.entry_time, t.exit_time, pst.hourly_rate " +
+            String sql = "SELECT t.entry_time, t.exit_time, t.spot_id, pst.hourly_rate " +
                     "FROM ticket t " +
                     "JOIN parking_spot ps ON t.spot_id = ps.id " +
                     "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
@@ -117,7 +120,8 @@ public class ExitController {
             pstmt.setString(1, plate);
 
             ResultSet rs = pstmt.executeQuery();
-            if (!rs.next()) return "No receipt found.";
+            if (!rs.next())
+                return "No receipt found.";
 
             Timestamp entryTime = rs.getTimestamp("entry_time");
             Timestamp exitTime = rs.getTimestamp("exit_time");
@@ -125,8 +129,17 @@ public class ExitController {
 
             long minutes = Duration.between(entryTime.toLocalDateTime(), exitTime.toLocalDateTime()).toMinutes();
             long hours = (long) Math.ceil(minutes / 60.0);
+            boolean isHandicapped = checkIfHandicappedVehicle(conn, plate);
+            boolean isHandicappedSpot = checkIfHandicappedSpot(conn, rs.getInt("spot_id"));
 
-            double parkingFee = hours * rate;
+            double parkingFee = 0;
+            if (isHandicapped && isHandicappedSpot) {
+                parkingFee = 0;
+            } else if (isHandicapped && !isHandicappedSpot) {
+                parkingFee = hours * 2.0;
+            } else {
+                parkingFee = hours * rate;
+            }
             double total = parkingFee + finePaid;
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -150,36 +163,42 @@ public class ExitController {
                     parkingFee,
                     finePaid,
                     total,
-                    method
-            );
+                    method);
 
         } catch (Exception e) {
             e.printStackTrace();
             return "Error generating receipt.";
         }
     }
+
     // Fine calculation logic
     private double calculateFine(long hours) {
-        if (hours <= 24) return 0;
+        if (hours <= 24)
+            return 0;
 
         switch (fineScheme) {
-            case "A": return 50;
-            case "B": return (hours <= 48) ? 150 : (hours <= 72 ? 300 : 500);
-            case "C": return (hours - 24) * 20;
-            default: return 50;
+            case "A":
+                return 50;
+            case "B":
+                return (hours <= 48) ? 150 : (hours <= 72 ? 300 : 500);
+            case "C":
+                return (hours - 24) * 20;
+            default:
+                return 50;
         }
     }
 
     // Calculate fine for a plate
     private double calculateFine(Connection conn, String plate) throws SQLException {
         String sql = "SELECT t.entry_time FROM ticket t " +
-                     "JOIN vehicle v ON t.vehicle_id = v.id " +
-                     "WHERE v.license_plate = ? AND t.exit_time IS NULL LIMIT 1";
+                "JOIN vehicle v ON t.vehicle_id = v.id " +
+                "WHERE v.license_plate = ? AND t.exit_time IS NULL LIMIT 1";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, plate);
             ResultSet rs = pstmt.executeQuery();
-            if (!rs.next()) return 0.0;
+            if (!rs.next())
+                return 0.0;
 
             Timestamp entryTime = rs.getTimestamp("entry_time");
             Timestamp exitTime = Timestamp.valueOf(LocalDateTime.now());
@@ -193,16 +212,17 @@ public class ExitController {
     // Calculate parking fee
     private double calculateParkingFee(Connection conn, String plate) throws SQLException {
         String sql = "SELECT t.entry_time, t.spot_id, pst.hourly_rate " +
-                     "FROM ticket t " +
-                     "JOIN parking_spot ps ON t.spot_id = ps.id " +
-                     "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
-                     "JOIN vehicle v ON t.vehicle_id = v.id " +
-                     "WHERE v.license_plate = ? AND t.exit_time IS NULL LIMIT 1";
+                "FROM ticket t " +
+                "JOIN parking_spot ps ON t.spot_id = ps.id " +
+                "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
+                "JOIN vehicle v ON t.vehicle_id = v.id " +
+                "WHERE v.license_plate = ? AND t.exit_time IS NULL LIMIT 1";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, plate);
             ResultSet rs = pstmt.executeQuery();
-            if (!rs.next()) return 0.0;
+            if (!rs.next())
+                return 0.0;
 
             Timestamp entryTime = rs.getTimestamp("entry_time");
             int spotId = rs.getInt("spot_id");
@@ -215,11 +235,17 @@ public class ExitController {
             boolean isHandicapped = checkIfHandicappedVehicle(conn, plate);
             boolean isHandicappedSpot = checkIfHandicappedSpot(conn, spotId);
 
-            return (isHandicapped && isHandicappedSpot) ? hours * 2.0 : hours * rate;
+            if (isHandicapped && isHandicappedSpot) {
+                return 0;
+            } else if (isHandicapped && !isHandicappedSpot) {
+                return hours * 2.0;
+            } else {
+                return hours * rate;
+            }
+
         }
     }
 
-    // Sum unpaid fines
     private double getUnpaidFineAmount(Connection conn, String plate) throws SQLException {
         String sql = "SELECT SUM(amount) AS total FROM fine WHERE license_plate = ? AND status = 'unpaid'";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -232,7 +258,6 @@ public class ExitController {
         return 0.0;
     }
 
-    // Existing helpers
     private boolean checkIfHandicappedVehicle(Connection conn, String plate) throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT has_handicapped_card FROM vehicle WHERE license_plate = ? ORDER BY id DESC LIMIT 1");
@@ -240,11 +265,12 @@ public class ExitController {
         ResultSet rs = pstmt.executeQuery();
         return rs.next() && rs.getBoolean("has_handicapped_card");
     }
+
     private boolean checkIfHandicappedSpot(Connection conn, int spotId) throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT pst.name FROM parking_spot ps " +
-                "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
-                "WHERE ps.id = ?");
+                        "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
+                        "WHERE ps.id = ?");
         pstmt.setInt(1, spotId);
         ResultSet rs = pstmt.executeQuery();
         return rs.next() && rs.getString("name").equalsIgnoreCase("Handicapped");
@@ -253,8 +279,8 @@ public class ExitController {
     private boolean isReservedSpot(Connection conn, int spotId) throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT pst.name FROM parking_spot ps " +
-                "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
-                "WHERE ps.id = ?");
+                        "JOIN parking_spot_type pst ON ps.type_id = pst.id " +
+                        "WHERE ps.id = ?");
         pstmt.setInt(1, spotId);
         ResultSet rs = pstmt.executeQuery();
         return rs.next() && rs.getString("name").equalsIgnoreCase("Reserved");
@@ -268,10 +294,10 @@ public class ExitController {
     // Retrieve the active ticket ID for a vehicle
     private int getTicketId(Connection conn, String plate) throws SQLException {
         String sql = "SELECT t.id " +
-                     "FROM ticket t " +
-                     "JOIN vehicle v ON t.vehicle_id = v.id " +
-                     "WHERE v.license_plate = ? AND t.exit_time IS NULL " +
-                     "ORDER BY t.id DESC LIMIT 1";
+                "FROM ticket t " +
+                "JOIN vehicle v ON t.vehicle_id = v.id " +
+                "WHERE v.license_plate = ? AND t.exit_time IS NULL " +
+                "ORDER BY t.id DESC LIMIT 1";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, plate);
@@ -285,7 +311,7 @@ public class ExitController {
 
     // Update ticket with exit time
     private void updateTicketExit(Connection conn, int ticketId) throws SQLException {
-        String sql = "UPDATE ticket SET exit_time = NOW() WHERE id = ?";
+        String sql = "UPDATE ticket SET exit_time = NOW(), status = 'paid' WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, ticketId);
             pstmt.executeUpdate();
@@ -293,26 +319,26 @@ public class ExitController {
     }
 
     // Free up the parking spot
-    private void updateSpotAvailability(Connection conn, String plate) throws SQLException {
-       String sql = "UPDATE parking_spot ps " +
-             "JOIN ticket t ON ps.id = t.spot_id " +
-             "JOIN vehicle v ON t.vehicle_id = v.id " +
-             "SET ps.status = 'available', ps.current_vehicle = NULL " +
-             "WHERE v.license_plate = ? AND t.exit_time IS NULL";
+    private void updateSpotAvailability(Connection conn, int ticketId) throws SQLException {
+        String sql = "UPDATE parking_spot ps " +
+                "JOIN ticket t ON ps.id = t.spot_id " +
+                "SET ps.status = 'available', ps.current_vehicle = NULL " +
+                "WHERE t.id = ?";
+
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, plate);
+            pstmt.setInt(1, ticketId);
             pstmt.executeUpdate();
         }
     }
 
     // Mark vehicle as exited
     private void updateVehicleExit(Connection conn, String plate) throws SQLException {
-        String sql = "UPDATE vehicle SET has_handicapped_card = has_handicapped_card " +
-                    "WHERE license_plate = ?";
+        String sql = "UPDATE vehicle SET has_handicapped_card = has_handicapped_card, exit_time = ? " +
+                "WHERE license_plate = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, plate);
+            pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setString(2, plate);
             pstmt.executeUpdate();
         }
     }
 }
-

@@ -1,6 +1,6 @@
 package model.Iterator;
 
-import java.util.List;
+import java.util.*;
 import model.ParkingSpot;
 
 public class SpotIterator implements ParkingIterator<ParkingSpot> {
@@ -20,6 +20,9 @@ public class SpotIterator implements ParkingIterator<ParkingSpot> {
 
     @Override
     public ParkingSpot next() {
+        if(!hasNext()) {
+            throw new NoSuchElementException("No more parking spots available.");
+        }
         return spots.get(spotIndex++);
     }
 }

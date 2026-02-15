@@ -9,13 +9,13 @@ import model.EntryResult;
 import model.ParkingFloor;
 import model.Iterator.FloorIterator;
 import model.Iterator.SpotIterator;
+import model.Iterator.VehicleTypeIterator;
 import model.ParkingSpot;
 import model.Ticket;
 import model.VehicleType;
 
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class MainFrame extends JFrame {
     private JTabbedPane floorTabs;
@@ -25,6 +25,10 @@ public class MainFrame extends JFrame {
     private ParkingController parkingController = new ParkingController();
     private EntryController entryController = new EntryController();
     private ExitController exitController = new ExitController();
+    private boolean parkingMode = false;
+    private int selectedVehicleTypeId;
+    private String selectedPlate;
+    private boolean selectedHasCard = false;
 
     public MainFrame() {
         setTitle("Parking Lot Management System");
@@ -52,20 +56,25 @@ public class MainFrame extends JFrame {
         JPanel actionPanel = new JPanel();
         actionPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         JButton parkVehicleBtn = new JButton("Park Vehicle");
-        JButton exitVehicleBtn = new JButton("Exit Vehicle");
+        JButton exitVehicleBtn = new JButton("Exit Parking");
         JButton adminBtn = new JButton("Admin");
+        JButton reporButtontBtn = new JButton("Reports");
 
-        parkVehicleBtn.addActionListener(e -> parkSelectedSpot());
-        exitVehicleBtn.addActionListener(e -> handleExitVehicle());
+        parkVehicleBtn.addActionListener(e -> handleParkVehicle());
+        exitVehicleBtn.addActionListener(e -> handleExitParking());
 
         adminBtn.addActionListener(e -> {
-        new AdminLoginPanel().setVisible(true);
-    });
-
+            new AdminLoginPanel().setVisible(true);
+        });
+        reporButtontBtn.addActionListener(e -> {
+            new ReportPanel().setVisible(true);
+        });
+        
 
         actionPanel.add(parkVehicleBtn);
         actionPanel.add(exitVehicleBtn);
         actionPanel.add(adminBtn);
+        actionPanel.add(reporButtontBtn);
 
         topBar.add(titleLabel, BorderLayout.WEST);
         topBar.add(selectedSpotLabel, BorderLayout.CENTER);
@@ -132,50 +141,122 @@ public class MainFrame extends JFrame {
         return grid;
     }
 
-    private void selectSpot(JButton btn, ParkingSpot spot) {
-        if (selectedSpotButton != null) {
-            selectedSpotButton.setBorder(
-                    BorderFactory.createLineBorder(Color.GREEN, 2));
-        }
+    private void filterEligibleSpots() {
 
-        selectedSpotButton = btn;
-        selectedSpot = spot;
-        btn.setBorder(BorderFactory.createLineBorder(Color.BLUE, 3));
-        updateSelectedSpotLabel();
+        FloorIterator floorIterator = parkingController.getFloorIterator();
+        int tabIndex = 0;
+
+        while (floorIterator.hasNext()) {
+
+            ParkingFloor floor = floorIterator.next();
+            JPanel grid = (JPanel) floorTabs.getComponentAt(tabIndex);
+
+            SpotIterator spotIterator = parkingController.getSpotIteratorByFloor(floor.getFloorId());
+
+            int componentIndex = 0;
+
+            while (spotIterator.hasNext()) {
+
+                ParkingSpot spot = spotIterator.next();
+
+                JPanel spotPanel = (JPanel) grid.getComponent(componentIndex);
+                JButton btn = (JButton) spotPanel.getComponent(1);
+
+                boolean eligible = false;
+
+                if (!spot.isAvailable()) {
+                    btn.setEnabled(false);
+                    btn.setBackground(Color.LIGHT_GRAY);
+                    componentIndex++;
+                    continue;
+                }
+
+                eligible = parkingController.isSpotEligibleForVehicle(spot.getSpotTypeId(),selectedVehicleTypeId);
+
+                btn.setEnabled(eligible);
+
+                if (eligible) {
+                    btn.setBackground(Color.GREEN);
+                } else {
+                    btn.setBackground(Color.LIGHT_GRAY);
+                }
+
+                componentIndex++;
+            }
+
+            tabIndex++;
+        }
     }
 
-    private void parkSelectedSpot() {
-        if (selectedSpot == null) {
-            JOptionPane.showMessageDialog(this, "Please select an available spot first.");
+    private void selectSpot(JButton btn, ParkingSpot spot) {
+
+        selectedSpot = spot;
+
+        if (parkingMode && spot.isAvailable()) {
+
+            EntryResult result = entryController.registerEntry(
+                    selectedPlate,
+                    selectedVehicleTypeId,
+                    selectedHasCard,
+                    spot.getId());
+
+            if (!result.isSuccess()) {
+                JOptionPane.showMessageDialog(this, result.getMessage());
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    buildTicketMessage(result.getTicket()));
+
+            parkingMode = false;
+            selectedVehicleTypeId = -1;
+            selectedPlate = null;
+
+            refreshParkingOverview();
             return;
         }
 
+        updateSelectedSpotLabel();
+    }
+
+    private void handleParkVehicle() {
+
         JTextField plateField = new JTextField();
         JComboBox<VehicleType> vehicleTypeCombo = new JComboBox<>();
-        JCheckBox handicappedCardCheck = new JCheckBox("Has handicapped card");
 
-        List<VehicleType> vehicleTypes = entryController.getVehicleTypes();
-        for (VehicleType vehicleType : vehicleTypes) {
-            vehicleTypeCombo.addItem(vehicleType);
+        VehicleTypeIterator vehicleTypes = entryController.getVehicleTypes();
+        while (vehicleTypes.hasNext()) {
+            vehicleTypeCombo.addItem(vehicleTypes.next());
         }
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
-        panel.add(new JLabel("Selected Spot: " + selectedSpot.getSpotCode()));
-        panel.add(new JLabel("Spot Type: " + selectedSpot.getType()));
         panel.add(new JLabel("License Plate:"));
         panel.add(plateField);
         panel.add(new JLabel("Vehicle Type:"));
         panel.add(vehicleTypeCombo);
+        panel.add(new JLabel("Handicapped Card:"));
+        JCheckBox handicappedCardCheck = new JCheckBox();
+        handicappedCardCheck.setEnabled(false);
         panel.add(handicappedCardCheck);
 
         int option = JOptionPane.showConfirmDialog(
                 this,
                 panel,
-                "Park Vehicle",
+                "Enter Vehicle Information",
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE);
 
         if (option != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        if(vehicleTypeCombo.getSelectedItem() == null){
+            JOptionPane.showMessageDialog(this, "Please select a vehicle type.");
+            return;
+        }
+
+        if(entryController.hasActiveParking(plateField.getText().trim())){
+            JOptionPane.showMessageDialog(this, "This vehicle already has an active parking session.");
             return;
         }
 
@@ -185,26 +266,24 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        String licensePlate = plateField.getText();
-        boolean hasCard = handicappedCardCheck.isSelected();
-
-        EntryResult result = entryController.registerEntry(
-                licensePlate,
-                selectedType.getId(),
-                hasCard,
-                selectedSpot.getId());
-
-        if (!result.isSuccess()) {
-            JOptionPane.showMessageDialog(this, result.getMessage(), "Entry Failed", JOptionPane.ERROR_MESSAGE);
+        String licensePlate = plateField.getText().trim();
+        if (licensePlate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter license plate.");
             return;
         }
 
-        JOptionPane.showMessageDialog(this, buildTicketMessage(result.getTicket()), "Parking Ticket",
-                JOptionPane.INFORMATION_MESSAGE);
-        refreshParkingOverview();
+        this.selectedVehicleTypeId = selectedType.getId();
+        this.selectedPlate = licensePlate;
+        this.selectedHasCard = handicappedCardCheck.isSelected();
+
+        this.parkingMode = true;
+
+        filterEligibleSpots();
+
+        JOptionPane.showMessageDialog(this, "Please select an eligible available spot.");
     }
 
-    private void handleExitVehicle() {
+    private void handleExitParking() {
         JTextField plateField = new JTextField();
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
@@ -271,6 +350,7 @@ public class MainFrame extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
 
             refreshParkingOverview();
+
         } else {
             JOptionPane.showMessageDialog(this, "Payment failed!");
         }

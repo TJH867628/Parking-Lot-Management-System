@@ -10,8 +10,9 @@ public class ParkingSpot {
     private int floor_id;
     private int row_number;
     private int spot_number;
+    private int spotTypeId;
 
-    public ParkingSpot(int id, int floor_id,int row_number ,int spot_number, String type, String status, String currentVehicle,Double hourlyRate) {
+    public ParkingSpot(int id, int floor_id,int row_number ,int spot_number, String type, String status, String currentVehicle,Double hourlyRate, int spotTypeId) {
         this.id = id;
         this.type = type;
         this.status = status;
@@ -20,6 +21,7 @@ public class ParkingSpot {
         this.row_number = row_number;
         this.spot_number = spot_number;
         this.ratePerHour = hourlyRate;
+        this.spotTypeId = spotTypeId;
     }
 
     public boolean isAvailable() {
@@ -32,6 +34,10 @@ public class ParkingSpot {
 
     public String getType() {
         return type;
+    }
+
+    public int getSpotTypeId() {
+        return spotTypeId;
     }
 
     public int getFloorId() {

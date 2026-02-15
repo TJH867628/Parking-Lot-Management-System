@@ -3,6 +3,8 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
+import model.Iterator.FloorIterator;
+
 public class ParkingLot {
     private List<ParkingFloor> floors = new ArrayList<>();
 
@@ -10,8 +12,8 @@ public class ParkingLot {
         floors.add(floor);
     }
 
-    public List<ParkingFloor> getFloors() {
-        return floors;
+    public FloorIterator getFloors() {
+        return new FloorIterator(floors);
     }
 
     public ParkingFloor getFloorById(int floorId) {
@@ -26,7 +28,7 @@ public class ParkingLot {
     public int getTotalSpots() {
         int total = 0;
         for (ParkingFloor floor : floors) {
-            total += floor.getSpots().size();
+            total += floor.getTotalSpots();
         }
         return total;
     }
@@ -34,11 +36,7 @@ public class ParkingLot {
     public int getOccupiedSpots() {
         int occupied = 0;
         for (ParkingFloor floor : floors) {
-            for (ParkingSpot spot : floor.getSpots()) {
-                if (!spot.isAvailable()) {
-                    occupied++;
-                }
-            }
+            occupied += floor.getOccupiedSpots();
         }
         return occupied;
     }

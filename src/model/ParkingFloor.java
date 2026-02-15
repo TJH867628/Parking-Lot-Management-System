@@ -3,6 +3,8 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
+import model.Iterator.SpotIterator;
+
 public class ParkingFloor {
     private int floorId;
     private int floorNumber;
@@ -25,7 +27,21 @@ public class ParkingFloor {
         spots.add(spot);
     }
 
-    public List<ParkingSpot> getSpots() {
-        return spots;
+    public SpotIterator getSpots() {
+        return new SpotIterator(spots);
+    }
+
+    public int getTotalSpots() {
+        return spots.size();
+    }
+
+    public int getOccupiedSpots() {
+        int occupied = 0;
+        for (ParkingSpot spot : spots) {
+            if (!spot.isAvailable()) {
+                occupied++;
+            }
+        }
+        return occupied;
     }
 }

@@ -6,6 +6,8 @@ import model.EntryResult;
 import model.EntrySpot;
 import model.Ticket;
 import model.VehicleType;
+import model.Iterator.EntrySpotIterator;
+import model.Iterator.VehicleTypeIterator;
 import util.DBConnectionUtil;
 
 import java.sql.Connection;
@@ -13,18 +15,21 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class EntryController {
     private VehicleDAO vehicleDAO = new VehicleDAO();
     private TicketDAO ticketDAO = new TicketDAO();
 
-    public List<VehicleType> getVehicleTypes() {
+    public VehicleTypeIterator getVehicleTypes() {
         return vehicleDAO.getAllVehicleTypes();
     }
 
-    public List<EntrySpot> getAvailableSpots(int vehicleTypeId) {
+    public EntrySpotIterator getAvailableSpots(int vehicleTypeId) {
         return ticketDAO.getAvailableSpotsForVehicle(vehicleTypeId);
+    }
+
+    public boolean hasActiveParking(String licensePlate) {
+        return vehicleDAO.hasActiveVehicle(licensePlate);
     }
 
     public EntryResult registerEntry(String licensePlate, int vehicleTypeId, boolean hasHandicappedCard, int selectedSpotId) {
@@ -110,9 +115,10 @@ public class EntryController {
         return "T-" + licensePlate + "-" + entryTime.format(formatter);
     }
 
-    private String getVehicleTypeName(int vehicleTypeId) {
-        List<VehicleType> vehicleTypes = vehicleDAO.getAllVehicleTypes();
-        for (VehicleType vehicleType : vehicleTypes) {
+    public String getVehicleTypeName(int vehicleTypeId) {
+        VehicleTypeIterator vehicleTypes = vehicleDAO.getAllVehicleTypes();
+        while (vehicleTypes.hasNext()) {
+            VehicleType vehicleType = vehicleTypes.next();
             if (vehicleType.getId() == vehicleTypeId) {
                 return vehicleType.getName();
             }

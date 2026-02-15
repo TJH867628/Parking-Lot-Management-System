@@ -3,18 +3,20 @@ package controller;
 import dao.TicketDAO;
 import dao.ParkingLotDAO;
 import dao.PaymentDAO;
-import dao.FineDAO;   // ✅ add FineDAO import
+import dao.ReportDAO;
+import dao.FineDAO;
 import model.ParkingLot;
 import model.ParkingFloor;
-import model.ParkingSpot;
-import model.Ticket;
 import model.Iterator.FloorIterator;
 import model.Iterator.SpotIterator;
+import model.Iterator.SpotRuleIterator;
+import model.Iterator.ParkedVehicleIterator;
+import model.Iterator.FineIterator;
 import util.DBConnectionUtil;
 
 import java.sql.Connection;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ParkingController {
     private TicketDAO ticketDAO;
@@ -22,20 +24,19 @@ public class ParkingController {
     private ParkingLot parkingLot;
 
     private PaymentDAO paymentDAO = new PaymentDAO();
-    private FineDAO fineDAO = new FineDAO();   // ✅ add FineDAO instance
+    private FineDAO fineDAO = new FineDAO();
+    private ReportDAO reportDAO = new ReportDAO();
 
     public ParkingController() {
         this.ticketDAO = new TicketDAO();
         this.parkingLotDAO = new ParkingLotDAO();
-        this.parkingLot = parkingLotDAO.loadParkingLot(); // load all floors & spots at startup
+        this.parkingLot = parkingLotDAO.loadParkingLot();
     }
 
-    // ---------------- Parked Vehicles ----------------
-    public List<String[]> getParkedVehiclesTable() {
+    public ParkedVehicleIterator getParkedVehiclesTable() {
         return ticketDAO.getParkedVehiclesWithEntryTime();
     }
 
-    // ---------------- Occupancy ----------------
     public int getTotalSpots() {
         return parkingLot.getTotalSpots();
     }
@@ -44,7 +45,6 @@ public class ParkingController {
         return parkingLot.getOccupiedSpots();
     }
 
-    // ---------------- Revenue ----------------
     public double getTotalRevenue() {
         try (Connection conn = DBConnectionUtil.getConnection()) {
             return paymentDAO.getTotalRevenue(conn);
@@ -81,32 +81,55 @@ public class ParkingController {
         }
     }
 
-    // ---------------- Floor & Spot Iterators ----------------
     public FloorIterator getFloorIterator() {
-        return new FloorIterator(parkingLot.getFloors());
+        return parkingLot.getFloors();
     }
 
     public SpotIterator getSpotIteratorByFloor(int floorId) {
         ParkingFloor floor = parkingLot.getFloorById(floorId);
         if (floor != null) {
-            return new SpotIterator(floor.getSpots());
+            return floor.getSpots();
         }
-        return new SpotIterator(List.of()); // empty iterator if floor not found
+        return new SpotIterator(new ArrayList<>());
     }
 
-    // ---------------- Unpaid Fines ----------------
-    public List<String[]> getUnpaidFinesTable() {
+    public FineIterator getUnpaidFinesTable() {
         try (Connection conn = DBConnectionUtil.getConnection()) {
-            return fineDAO.getUnpaidFines(conn);   // ✅ use FineDAO instead of TicketDAO
+            return fineDAO.getUnpaidFines(conn);
         } catch (Exception e) {
             e.printStackTrace();
-            return new ArrayList<>();
+            return new FineIterator(new ArrayList<>());
         }
     }
 
-    // Optional: auto-generate fines if needed
+    public boolean isSpotEligibleForVehicle(int spotTypeId, int vehicleTypeId) {
+        SpotRuleIterator rules = parkingLotDAO.getSpotRulesByVehicleType(vehicleTypeId);
+        while (rules.hasNext()) {
+            if (rules.next().getSpotTypeId() == spotTypeId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void checkAndGenerateFines() {
-        // You can implement logic here to scan tickets and insert fines if overdue
-        // For now, left empty as placeholder
+        try (Connection conn = DBConnectionUtil.getConnection()) {
+            fineDAO.generateFinesForOverstayedVehicles(conn);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public double getTotalUnpaidFineAmount() {
+        try (Connection conn = DBConnectionUtil.getConnection()) {
+            return fineDAO.getTotalUnpaidFineAmount();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0.0;
+        }
+    }
+
+    public List<String[]> getOccupancyBySpotType() {
+        return reportDAO.getOccupancyBySpotType();
     }
 }

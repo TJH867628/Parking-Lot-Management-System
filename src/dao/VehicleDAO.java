@@ -5,25 +5,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.VehicleType;
+import model.Iterator.VehicleTypeIterator;
 import util.DBConnectionUtil;
 
 public class VehicleDAO {
 
-    public List<VehicleType> getAllVehicleTypes() {
+    public VehicleTypeIterator getAllVehicleTypes() {
         List<VehicleType> vehicleTypes = new ArrayList<>();
         String sql = "SELECT id, name FROM vehicle_type ORDER BY id";
 
         try (Connection conn = DBConnectionUtil.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 ResultSet rs = pstmt.executeQuery()) {
+
             while (rs.next()) {
-                vehicleTypes.add(new VehicleType(rs.getInt("id"), rs.getString("name")));
+                vehicleTypes.add(
+                        new VehicleType(
+                                rs.getInt("id"),
+                                rs.getString("name")));
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return vehicleTypes;
+        return new VehicleTypeIterator(vehicleTypes);
     }
 
     public boolean hasActiveVehicle(String licensePlate) {
@@ -69,4 +75,6 @@ public class VehicleDAO {
             throw new SQLException("Creating vehicle failed, no ID returned.");
         }
     }
+
+    
 }

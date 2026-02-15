@@ -1,22 +1,32 @@
 package view;
 
+import controller.AdminController;
 import controller.ParkingController;
+import model.FineScheme;
+import model.ParkedVehicle;
 import model.ParkingFloor;
 import model.ParkingSpot;
+import model.Vehicle;
+import model.Iterator.FineIterator;
+import model.Iterator.FineSchemeIterator;
 import model.Iterator.FloorIterator;
+import model.Iterator.ParkedVehicleIterator;
 import model.Iterator.SpotIterator;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminDashboardPanel extends JPanel {
     private ParkingController parkingController;
     private JButton refreshButton;
     private JTabbedPane tabs;
+    private AdminController adminController = new AdminController();
 
     public AdminDashboardPanel(ParkingController parkingController) {
         this.parkingController = parkingController;
+        parkingController.checkAndGenerateFines();
         initUI();
     }
 
@@ -106,135 +116,188 @@ public class AdminDashboardPanel extends JPanel {
 
     // Occupancy Rate tab
     private JPanel buildOccupancyPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        int total = parkingController.getTotalSpots();
-        int occupied = parkingController.getOccupiedSpots();
-        double rate = total == 0 ? 0 : (occupied * 100.0 / total);
 
-        JLabel label = new JLabel("Current Occupancy Rate: " +
-                String.format("%.2f", rate) + "%", SwingConstants.CENTER);
-        label.setFont(new Font("Arial", Font.BOLD, 18));
-        panel.add(label, BorderLayout.CENTER);
+        JPanel panel = new JPanel(new BorderLayout());
+
+        List<String[]> rows = parkingController.getOccupancyBySpotType();
+
+        String[] columns = {
+                "Spot Type",
+                "Total Spots",
+                "Occupied",
+                "Occupancy Rate"
+        };
+
+        String[][] data = rows.toArray(new String[0][]);
+
+        JTable table = new JTable(data, columns);
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
         return panel;
     }
 
     // Revenue tab
-private JPanel buildRevenuePanel() {
-    JPanel panel = new JPanel(new GridLayout(4, 1)); // 4 rows, 1 column
+    private JPanel buildRevenuePanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 1)); // 4 rows, 1 column
 
-    double total = parkingController.getTotalRevenue();
-    double daily = parkingController.getDailyRevenue();
-    double weekly = parkingController.getWeeklyRevenue();
-    double monthly = parkingController.getMonthlyRevenue();
+        double total = parkingController.getTotalRevenue();
+        double daily = parkingController.getDailyRevenue();
+        double weekly = parkingController.getWeeklyRevenue();
+        double monthly = parkingController.getMonthlyRevenue();
 
-    JLabel totalLabel = new JLabel("Total Revenue Collected: RM " + String.format("%.2f", total), SwingConstants.CENTER);
-    JLabel dailyLabel = new JLabel("Daily Revenue: RM " + String.format("%.2f", daily), SwingConstants.CENTER);
-    JLabel weeklyLabel = new JLabel("Weekly Revenue: RM " + String.format("%.2f", weekly), SwingConstants.CENTER);
-    JLabel monthlyLabel = new JLabel("Monthly Revenue: RM " + String.format("%.2f", monthly), SwingConstants.CENTER);
+        JLabel totalLabel = new JLabel("Total Revenue Collected: RM " + String.format("%.2f", total),
+                SwingConstants.CENTER);
+        JLabel dailyLabel = new JLabel("Daily Revenue: RM " + String.format("%.2f", daily), SwingConstants.CENTER);
+        JLabel weeklyLabel = new JLabel("Weekly Revenue: RM " + String.format("%.2f", weekly), SwingConstants.CENTER);
+        JLabel monthlyLabel = new JLabel("Monthly Revenue: RM " + String.format("%.2f", monthly),
+                SwingConstants.CENTER);
 
-    Font font = new Font("Arial", Font.BOLD, 16);
-    totalLabel.setFont(font);
-    dailyLabel.setFont(font);
-    weeklyLabel.setFont(font);
-    monthlyLabel.setFont(font);
+        Font font = new Font("Arial", Font.BOLD, 16);
+        totalLabel.setFont(font);
+        dailyLabel.setFont(font);
+        weeklyLabel.setFont(font);
+        monthlyLabel.setFont(font);
 
-    panel.add(totalLabel);
-    panel.add(dailyLabel);
-    panel.add(weeklyLabel);
-    panel.add(monthlyLabel);
+        panel.add(totalLabel);
+        panel.add(dailyLabel);
+        panel.add(weeklyLabel);
+        panel.add(monthlyLabel);
 
-    return panel;
-}
-
+        return panel;
+    }
 
     // Vehicles Parked tab
-private JPanel buildVehiclesPanel() {
-    JPanel panel = new JPanel(new BorderLayout());
-    List<String[]> vehicles = parkingController.getParkedVehiclesTable();
+    private JPanel buildVehiclesPanel() {
 
-    // Define table columns to match DAO order
-    String[] columnNames = { "Floor", "Spot Code", "License Plate", "Entry Time" };
+        JPanel panel = new JPanel(new BorderLayout());
+        ParkedVehicleIterator vehiclesIterator = parkingController.getParkedVehiclesTable();
 
-    // Convert List<String[]> to 2D array
-    String[][] data = vehicles.toArray(new String[0][]);
+        String[] columnNames = { "Floor", "Spot Code", "License Plate", "Entry Time" };
+        java.util.List<String[]> vehicles = new java.util.ArrayList<>();
 
-    JTable table = new JTable(data, columnNames);
-    table.setFillsViewportHeight(true);
-    table.setRowHeight(25);
-    table.setAutoCreateRowSorter(true); // allow sorting by columns
+        while (vehiclesIterator.hasNext()) {
 
-    JScrollPane scrollPane = new JScrollPane(table);
-    panel.add(scrollPane, BorderLayout.CENTER);
+            ParkedVehicle v = vehiclesIterator.next();
 
-    return panel;
-}
+            vehicles.add(new String[] {
+                    String.valueOf(v.getFloorId()),
+                    v.getSpotCode(),
+                    v.getLicensePlate(),
+                    v.getEntryTime().toString()
+            });
+        }
 
+        String[][] data = vehicles.toArray(new String[0][]);
 
+        JTable table = new JTable(data, columnNames);
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
 
-    // Unpaid Fines tab (placeholder until DAO implemented)
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
     // Unpaid Fines tab
-   private JPanel buildFinesPanel() {
-    JPanel panel = new JPanel(new BorderLayout());
+    private JPanel buildFinesPanel() {
 
-    // Call controller method
-    List<String[]> fines = parkingController.getUnpaidFinesTable();
+        JPanel panel = new JPanel(new BorderLayout());
 
-    // Define table columns
-    String[] columnNames = { "License Plate", "Fine Amount (RM)", "Status", "Reason" };
-    String[][] data = fines.toArray(new String[0][]);
+        FineIterator finesIterator = parkingController.getUnpaidFinesTable();
 
-    JTable table = new JTable(data, columnNames);
-    table.setFillsViewportHeight(true);
-    table.setRowHeight(25);
-    table.setAutoCreateRowSorter(true);
+        List<String[]> fines = new ArrayList<>();
 
-    JScrollPane scrollPane = new JScrollPane(table);
-    panel.add(scrollPane, BorderLayout.CENTER);
+        while (finesIterator.hasNext()) {
+            fines.add(finesIterator.next());
+        }
 
-    return panel;
-}
+        String[] columnNames = {
+                "License Plate",
+                "Fine Amount (RM)",
+                "Status",
+                "Reason"
+        };
 
+        String[][] data = fines.toArray(new String[0][]);
 
+        JTable table = new JTable(data, columnNames);
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
 
-    // Fine Scheme tab (placeholder)
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
     private JPanel buildFineSchemePanel() {
-        JPanel panel = new JPanel(new FlowLayout());
-        JLabel label = new JLabel("Select Fine Scheme:");
-        String[] schemes = { "Flat Rate", "Per Hour", "Progressive" };
-        JComboBox<String> comboBox = new JComboBox<>(schemes);
 
+        JPanel panel = new JPanel(new FlowLayout());
+
+        JLabel label = new JLabel("Select Fine Scheme:");
         panel.add(label);
+
+        FineSchemeIterator iterator = adminController.getAllFineSchemes();
+
+        JComboBox<FineScheme> comboBox = new JComboBox<>();
+
+        FineScheme activeScheme = null;
+
+        while (iterator.hasNext()) {
+            FineScheme scheme = iterator.next();
+            comboBox.addItem(scheme);
+
+            if (scheme.isActive()) {
+                activeScheme = scheme;
+            }
+        }
+
+        if (activeScheme != null) {
+            comboBox.setSelectedItem(activeScheme);
+        }
+
         panel.add(comboBox);
 
         JButton applyBtn = new JButton("Apply Scheme");
         panel.add(applyBtn);
 
         applyBtn.addActionListener(e -> {
-            String scheme = (String) comboBox.getSelectedItem();
+
+            FineScheme selected = (FineScheme) comboBox.getSelectedItem();
+
+            if (selected == null)
+                return;
+
+            adminController.changeFineScheme(selected.getId());
+
             JOptionPane.showMessageDialog(this,
-                    "Fine scheme set to: " + scheme);
+                    "Fine scheme changed to: " + selected.getSchemeType());
+
+            refreshDashboard();
         });
 
         return panel;
     }
 
     private void refreshDashboard() {
-    // Run fine generation first
-    parkingController.checkAndGenerateFines();
+        // Run fine generation first
+        parkingController.checkAndGenerateFines();
 
-    // Reload controller if needed
-    parkingController = new ParkingController();
+        // Reload controller if needed
+        parkingController = new ParkingController();
 
-    // Rebuild tabs
-    tabs.removeAll();
-    tabs.addTab("Floors & Spots", buildFloorsPanel());
-    tabs.addTab("Occupancy Rate", buildOccupancyPanel());
-    tabs.addTab("Revenue", buildRevenuePanel());
-    tabs.addTab("Vehicles Parked", buildVehiclesPanel());
-    tabs.addTab("Unpaid Fines", buildFinesPanel());
-    tabs.addTab("Fine Scheme", buildFineSchemePanel());
+        // Rebuild tabs
+        tabs.removeAll();
+        tabs.addTab("Floors & Spots", buildFloorsPanel());
+        tabs.addTab("Occupancy Rate", buildOccupancyPanel());
+        tabs.addTab("Revenue", buildRevenuePanel());
+        tabs.addTab("Vehicles Parked", buildVehiclesPanel());
+        tabs.addTab("Unpaid Fines", buildFinesPanel());
+        tabs.addTab("Fine Scheme", buildFineSchemePanel());
 
-    revalidate();
-    repaint();
+        revalidate();
+        repaint();
     }
 }

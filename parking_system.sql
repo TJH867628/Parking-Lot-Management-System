@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `vehicle_type` (
 
 -- Dumping data for table parking_system.vehicle_type: ~5 rows (approximately)
 INSERT INTO `vehicle_type` (`id`, `name`, `created_at`, `updated_at`) VALUES
-	(1, 'Motorcycle', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
+	(1parking_system, 'Motorcycle', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 	(2, 'Car', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 	(3, 'SUV', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),
 	(4, 'Truck', '2026-01-29 17:50:13', '2026-01-29 17:50:13'),

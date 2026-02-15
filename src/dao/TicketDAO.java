@@ -1,7 +1,12 @@
 package dao;
 
 import model.EntrySpot;
+import model.ParkedVehicle;
 import model.Ticket;
+import model.Iterator.EntrySpotIterator;
+import model.Iterator.TicketIterator;
+import model.Iterator.ParkedVehicleIterator;
+import model.Iterator.FineIterator;
 import util.DBConnectionUtil;
 
 import java.sql.*;
@@ -11,7 +16,7 @@ import java.util.List;
 
 public class TicketDAO {
 
-    public List<EntrySpot> getAvailableSpotsForVehicle(int vehicleTypeId) {
+    public EntrySpotIterator getAvailableSpotsForVehicle(int vehicleTypeId) {
         List<EntrySpot> spots = new ArrayList<>();
 
         String sql = "SELECT ps.id, " +
@@ -28,7 +33,7 @@ public class TicketDAO {
                 "ORDER BY ps.floor_id, ps.row_number, ps.spot_number";
 
         try (Connection conn = DBConnectionUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, String.valueOf(vehicleTypeId));
             ResultSet rs = pstmt.executeQuery();
 
@@ -39,7 +44,7 @@ public class TicketDAO {
             e.printStackTrace();
         }
 
-        return spots;
+        return new EntrySpotIterator(spots);
     }
 
     public EntrySpot getSpotById(int spotId) {
@@ -55,7 +60,7 @@ public class TicketDAO {
                 "LIMIT 1";
 
         try (Connection conn = DBConnectionUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, spotId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -86,7 +91,7 @@ public class TicketDAO {
 
     public boolean occupySpot(Connection conn, int spotId, String licensePlate) throws SQLException {
         String sql = "UPDATE parking_spot " +
-                "SET status = 'parked', " +
+                "SET status = 'occupied', " +
                 "current_vehicle = ? " +
                 "WHERE id = ? " +
                 "AND LOWER(status) = 'available'";
@@ -134,124 +139,111 @@ public class TicketDAO {
                 rs.getDouble("hourly_rate"));
     }
 
-    public List<Ticket> getActiveTickets() {
-    List<Ticket> tickets = new ArrayList<>();
+    public TicketIterator getActiveTickets() {
+        List<Ticket> tickets = new ArrayList<>();
 
-    String sql = "SELECT t.id, t.ticket_code, t.vehicle_id, t.spot_id, " +
-                 "t.entry_time, t.exit_time, t.status, " +
-                 "CONCAT('F', ps.floor_id, '-R', ps.row_number, '-S', ps.spot_number) AS spot_code, " +
-                 "v.license_plate " +
-                 "FROM ticket t " +
-                 "JOIN parking_spot ps ON t.spot_id = ps.id " +
-                 "JOIN vehicle v ON t.vehicle_id = v.id " +
-                 "WHERE t.status = 'active'";
-
-    try (Connection conn = DBConnectionUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql);
-         ResultSet rs = pstmt.executeQuery()) {
-
-        while (rs.next()) {
-            Ticket ticket = new Ticket(
-                rs.getInt("id"),
-                rs.getString("ticket_code"),
-                rs.getInt("vehicle_id"),
-                rs.getInt("spot_id"),
-                rs.getTimestamp("entry_time"),
-                rs.getTimestamp("exit_time"),
-                rs.getString("status"),
-                rs.getString("spot_code")
-            );
-
-            // NEW: set license plate separately
-            ticket.setLicensePlate(rs.getString("license_plate"));
-
-            tickets.add(ticket);
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
-
-    return tickets;
-}
-
-
-
-    // ---------------- NEW METHOD ----------------
-    public List<String[]> getParkedVehiclesWithEntryTime() {
-        List<String[]> vehicles = new ArrayList<>();
-
-        String sql = "SELECT ps.floor_id, ps.row_number, ps.spot_number, ps.current_vehicle, t.entry_time " +
-                     "FROM parking_spot ps " +
-                     "JOIN ticket t ON ps.id = t.spot_id " +
-                     "WHERE LOWER(ps.status) = 'parked' AND t.status = 'active'";
+        String sql = "SELECT t.id, t.ticket_code, t.vehicle_id, t.spot_id, " +
+                "t.entry_time, t.exit_time, t.status, " +
+                "CONCAT('F', ps.floor_id, '-R', ps.row_number, '-S', ps.spot_number) AS spot_code, " +
+                "v.license_plate " +
+                "FROM ticket t " +
+                "JOIN parking_spot ps ON t.spot_id = ps.id " +
+                "JOIN vehicle v ON t.vehicle_id = v.id " +
+                "WHERE t.status = 'active'";
 
         try (Connection conn = DBConnectionUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                String floor = String.valueOf(rs.getInt("floor_id"));
-                String spotCode = "F" + rs.getInt("floor_id") +
-                                  "-R" + rs.getInt("row_number") +
-                                  "-S" + rs.getInt("spot_number");
-                String vehiclePlate = rs.getString("current_vehicle");
+                Ticket ticket = new Ticket(
+                        rs.getInt("id"),
+                        rs.getString("ticket_code"),
+                        rs.getInt("vehicle_id"),
+                        rs.getInt("spot_id"),
+                        rs.getTimestamp("entry_time"),
+                        rs.getTimestamp("exit_time"),
+                        rs.getString("status"),
+                        rs.getString("spot_code"));
 
-                Timestamp entryTime = rs.getTimestamp("entry_time");
-                String entryTimeStr = (entryTime != null)
-                        ? new SimpleDateFormat("dd MMM yyyy, HH:mm").format(entryTime)
-                        : "-";
+                // NEW: set license plate separately
+                ticket.setLicensePlate(rs.getString("license_plate"));
 
-                vehicles.add(new String[]{floor, spotCode, vehiclePlate, entryTimeStr});
+                tickets.add(ticket);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return vehicles;
+        return new TicketIterator(tickets);
+    }
+
+    // ---------------- NEW METHOD ----------------
+    public ParkedVehicleIterator getParkedVehiclesWithEntryTime() {
+        List<ParkedVehicle> vehicles = new ArrayList<>();
+
+        String sql = "SELECT ps.floor_id, ps.row_number, ps.spot_number, ps.current_vehicle, t.entry_time " +
+                "FROM parking_spot ps " +
+                "JOIN ticket t ON ps.id = t.spot_id " +
+                "WHERE LOWER(ps.status) = 'occupied' AND t.status = 'active'";
+
+        try (Connection conn = DBConnectionUtil.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                vehicles.add(new ParkedVehicle(
+                        rs.getInt("floor_id"),
+                        rs.getInt("row_number"),
+                        rs.getInt("spot_number"),
+                        rs.getString("current_vehicle"),
+                        rs.getTimestamp("entry_time")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return new ParkedVehicleIterator(vehicles);
     }
 
     public void insertFine(String plate, double amount, String status, String reason) {
-    String checkSql = "SELECT COUNT(*) FROM fine WHERE license_plate = ? AND LOWER(status) = 'unpaid' AND reason = ?";
-    String insertSql = "INSERT INTO fine (license_plate, amount, status, reason) VALUES (?, ?, ?, ?)";
+        String checkSql = "SELECT COUNT(*) FROM fine WHERE license_plate = ? AND LOWER(status) = 'unpaid' AND reason = ?";
+        String insertSql = "INSERT INTO fine (license_plate, amount, status, reason) VALUES (?, ?, ?, ?)";
 
-    try (Connection conn = DBConnectionUtil.getConnection();
-         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+        try (Connection conn = DBConnectionUtil.getConnection();
+                PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
 
-        // Check if an unpaid fine already exists for this plate + reason
-        checkStmt.setString(1, plate);
-        checkStmt.setString(2, reason);
-        ResultSet rs = checkStmt.executeQuery();
+            checkStmt.setString(1, plate);
+            checkStmt.setString(2, reason);
+            ResultSet rs = checkStmt.executeQuery();
 
-        if (rs.next() && rs.getInt(1) > 0) {
-            // Already fined → skip insert
-            return;
+            if (rs.next() && rs.getInt(1) > 0) {
+                return;
+            }
+
+            // Otherwise, insert new fine
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                insertStmt.setString(1, plate);
+                insertStmt.setDouble(2, amount);
+                insertStmt.setString(3, status);
+                insertStmt.setString(4, reason);
+                insertStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-
-        // Otherwise, insert new fine
-        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-            insertStmt.setString(1, plate);
-            insertStmt.setDouble(2, amount);
-            insertStmt.setString(3, status);
-            insertStmt.setString(4, reason);
-            insertStmt.executeUpdate();
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
     }
-}
 
-
-    // ---------------- NEW METHOD ----------------
-    public List<String[]> getUnpaidFines() {
+    public FineIterator getUnpaidFines() {
         List<String[]> fines = new ArrayList<>();
 
         String sql = "SELECT license_plate, amount, status, reason " +
-                    "FROM fine " +
-                    "WHERE LOWER(status) = 'unpaid'";
+                "FROM fine " +
+                "WHERE LOWER(status) = 'unpaid'";
 
         try (Connection conn = DBConnectionUtil.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery()) {
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 String plate = rs.getString("license_plate");
@@ -259,12 +251,12 @@ public class TicketDAO {
                 String status = rs.getString("status");
                 String reason = rs.getString("reason");
 
-                fines.add(new String[]{plate, amount, status, reason});
+                fines.add(new String[] { plate, amount, status, reason });
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return fines;
+        return new FineIterator(fines);
     }
 }

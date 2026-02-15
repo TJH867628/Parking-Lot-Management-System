@@ -5,11 +5,12 @@ import model.EntryResult;
 import model.EntrySpot;
 import model.Ticket;
 import model.VehicleType;
+import model.Iterator.VehicleTypeIterator;
+import model.Iterator.EntrySpotIterator;
 
 import javax.swing.*;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class EntryPanel extends JPanel {
     private EntryController entryController = new EntryController();
@@ -88,9 +89,9 @@ public class EntryPanel extends JPanel {
 
     private void loadVehicleTypes() {
         vehicleTypeCombo.removeAllItems();
-        List<VehicleType> vehicleTypes = entryController.getVehicleTypes();
-        for (VehicleType vehicleType : vehicleTypes) {
-            vehicleTypeCombo.addItem(vehicleType);
+        VehicleTypeIterator vehicleTypes = entryController.getVehicleTypes();
+        while (vehicleTypes.hasNext()) {
+            vehicleTypeCombo.addItem(vehicleTypes.next());
         }
     }
 
@@ -102,12 +103,14 @@ public class EntryPanel extends JPanel {
         }
 
         spotCombo.removeAllItems();
-        List<EntrySpot> spots = entryController.getAvailableSpots(selectedType.getId());
-        for (EntrySpot spot : spots) {
-            spotCombo.addItem(spot);
+        EntrySpotIterator spots = entryController.getAvailableSpots(selectedType.getId());
+        boolean hasSpots = false;
+        while (spots.hasNext()) {
+            spotCombo.addItem(spots.next());
+            hasSpots = true;
         }
 
-        if (spots.isEmpty()) {
+        if (!hasSpots) {
             JOptionPane.showMessageDialog(this, "No suitable available spots found.");
         }
     }

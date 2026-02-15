@@ -4,8 +4,9 @@ import java.util.*;
 import model.ParkingLot;
 import model.ParkingFloor;
 import model.ParkingSpot;
-import model.Iterator.FloorIterator;
-import model.Iterator.SpotIterator;
+import model.SpotRule;
+import model.Iterator.ParkingIterator;
+import model.Iterator.SpotRuleIterator;
 import util.DBConnectionUtil;
 import java.sql.*;
 
@@ -17,6 +18,7 @@ public class ParkingLotDAO {
         String sql = "SELECT pf.id AS floor_id, " +
                 "pf.number AS floor_number, " +
                 "ps.id AS spot_id, " +
+                "ps.type_id AS spot_type_id, " +
                 "ps.floor_id, " +
                 "ps.row_number, " +
                 "ps.spot_number, " +
@@ -44,6 +46,7 @@ public class ParkingLotDAO {
                 String status = rs.getString("status");
                 String currentVehicle = rs.getString("current_vehicle");
                 Double hourlyRate = rs.getDouble("hourly_rate");
+                int spotTypeId = rs.getInt("spot_type_id");
 
                 ParkingFloor floor = floorMap.get(floor_id);
                 if (floor == null) {
@@ -52,14 +55,44 @@ public class ParkingLotDAO {
                     parkingLot.addFloor(floor);
                 }
 
-                ParkingSpot spot = new ParkingSpot(spot_id, floor_id, row_number, spot_number, spotType, status, currentVehicle,hourlyRate);
+                ParkingSpot spot = new ParkingSpot(spot_id, floor_id, row_number, spot_number, spotType, status,
+                        currentVehicle, hourlyRate, spotTypeId);
                 floor.addSpot(spot);
             }
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         return parkingLot;
     }
+
+    public SpotRuleIterator getSpotRulesByVehicleType(int vehicleType) {
+
+        List<SpotRule> rules = new ArrayList<>();
+
+        String sql = "SELECT id, vehicle_type, spot_type " +
+                "FROM vehicle_spot_rule WHERE vehicle_type = ?";
+
+        try (Connection conn = DBConnectionUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, vehicleType);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                rules.add(new SpotRule(
+                        rs.getInt("id"),
+                        rs.getString("vehicle_type"),
+                        rs.getInt("spot_type")));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return new SpotRuleIterator(rules);
+    }
+
 }
