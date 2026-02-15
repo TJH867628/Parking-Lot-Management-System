@@ -57,11 +57,11 @@ public class MainFrame extends JFrame {
 
         parkVehicleBtn.addActionListener(e -> parkSelectedSpot());
         exitVehicleBtn.addActionListener(e -> handleExitVehicle());
-        adminBtn.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "Admin module is not linked yet.",
-                "Info",
-                JOptionPane.INFORMATION_MESSAGE));
+
+        adminBtn.addActionListener(e -> {
+        new AdminLoginPanel().setVisible(true);
+    });
+
 
         actionPanel.add(parkVehicleBtn);
         actionPanel.add(exitVehicleBtn);

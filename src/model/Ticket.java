@@ -12,7 +12,12 @@ public class Ticket {
     private String status;
     private String spotCode;
 
-    public Ticket(int id, String ticketCode, int vehicleId, int spotId, Timestamp entryTime, Timestamp exitTime, String status, String spotCode) {
+    // NEW: licensePlate field
+    private String licensePlate;
+
+    // Existing constructor (unchanged)
+    public Ticket(int id, String ticketCode, int vehicleId, int spotId,
+                  Timestamp entryTime, Timestamp exitTime, String status, String spotCode) {
         this.id = id;
         this.ticketCode = ticketCode;
         this.vehicleId = vehicleId;
@@ -23,6 +28,7 @@ public class Ticket {
         this.spotCode = spotCode;
     }
 
+    // Getters (existing)
     public int getId() {
         return id;
     }
@@ -53,5 +59,14 @@ public class Ticket {
 
     public String getSpotCode() {
         return spotCode;
+    }
+
+    // NEW: licensePlate getter/setter
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public void setLicensePlate(String licensePlate) {
+        this.licensePlate = licensePlate;
     }
 }

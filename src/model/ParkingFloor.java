@@ -1,29 +1,31 @@
 package model;
-import java.util.*;
-import model.Iterator.SpotIterator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ParkingFloor {
-    private int floor_id,floor_number;
+    private int floorId;
+    private int floorNumber;
     private List<ParkingSpot> spots = new ArrayList<>();
 
-    public ParkingFloor(int floor_id,int floor_number) {
-        this.floor_id = floor_id;
-        this.floor_number = floor_number;
-    }
-
-    public int getFloorNumber() {
-        return floor_number;
+    public ParkingFloor(int floorId, int floorNumber) {
+        this.floorId = floorId;
+        this.floorNumber = floorNumber;
     }
 
     public int getFloorId() {
-        return floor_id;
+        return floorId;
+    }
+
+    public int getFloorNumber() {
+        return floorNumber;
     }
 
     public void addSpot(ParkingSpot spot) {
         spots.add(spot);
     }
 
-    public SpotIterator getSpots() {
-        return new SpotIterator(spots);
+    public List<ParkingSpot> getSpots() {
+        return spots;
     }
 }

@@ -57,4 +57,5 @@ public class ParkingSpot {
     public String getCurrentVehicle() {
         return currentVehicle;
     }
+    
 }
