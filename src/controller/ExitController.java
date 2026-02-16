@@ -188,7 +188,7 @@ public class ExitController {
             case 1:
                 return 50;
             case 2:
-                return (hours <= 48) ? 150 : (hours <= 72 ? 300 : 500);
+                return (hours <= 48) ? 100 : (hours <= 72 ? 150 : 200);
             case 3:
                 return (hours - 24) * 20;
             default:
