@@ -236,7 +236,6 @@ public class MainFrame extends JFrame {
         panel.add(vehicleTypeCombo);
         panel.add(new JLabel("Handicapped Card:"));
         JCheckBox handicappedCardCheck = new JCheckBox();
-        handicappedCardCheck.setEnabled(false);
         panel.add(handicappedCardCheck);
 
         int option = JOptionPane.showConfirmDialog(
