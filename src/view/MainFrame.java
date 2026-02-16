@@ -301,6 +301,8 @@ public class MainFrame extends JFrame {
             return;
         }
 
+        parkingController.checkAndGenerateFines();
+
         String plate = plateField.getText().trim();
 
         if (plate.isEmpty()) {

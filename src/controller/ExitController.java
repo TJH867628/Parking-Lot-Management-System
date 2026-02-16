@@ -14,7 +14,7 @@ public class ExitController {
     private FineDAO fineDAO = new FineDAO();
     private PaymentDAO paymentDAO = new PaymentDAO();
 
-    private String fineScheme = "A";
+    private int fineScheme = 1;
 
     public String calculateExit(String plate) {
         try (Connection conn = DBConnectionUtil.getConnection()) {
@@ -34,6 +34,14 @@ public class ExitController {
 
             if (!rs.next())
                 return "No active parking found.";
+            
+            String fineSchemeSql = "SELECT id FROM fine_scheme WHERE is_active = 1;";
+            Statement stmt = conn.createStatement();
+            ResultSet configRs = stmt.executeQuery(fineSchemeSql);
+
+            if (configRs.next()) {
+                fineScheme = configRs.getInt("id");
+            }
 
             int spotId = rs.getInt("spot_id");
             Timestamp entryTime = rs.getTimestamp("entry_time");
@@ -177,11 +185,11 @@ public class ExitController {
             return 0;
 
         switch (fineScheme) {
-            case "A":
+            case 1:
                 return 50;
-            case "B":
+            case 2:
                 return (hours <= 48) ? 150 : (hours <= 72 ? 300 : 500);
-            case "C":
+            case 3:
                 return (hours - 24) * 20;
             default:
                 return 50;
